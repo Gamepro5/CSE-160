@@ -1,0 +1,7 @@
+//TO OPEN THE DOCKER SESSION:
+docker start hardcore_cartwright
+docker attach hardcore_cartwright
+
+//TO RUN THE CODEBASE
+make micaz sim
+python TestSim.py 

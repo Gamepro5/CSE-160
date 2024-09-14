@@ -30,5 +30,8 @@ implementation { //specifies general wiring
 
     components CommandHandlerC;
     Node.CommandHandler -> CommandHandlerC;
+
+    components NeighborDiscoveryC;
+    Node.NeighborDiscovery -> NeighborDiscoveryC;
     
 }

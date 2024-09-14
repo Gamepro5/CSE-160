@@ -22,6 +22,12 @@ module Node{
    uses interface SimpleSend as Sender;
 
    uses interface CommandHandler;
+
+   uses interface NeighborDiscovery;
+
+   //uses interface Timer<TMilli> as sendTimer;
+   uses interface Timer<TMilli> as delayTimer;
+   //uses interface Timer<TMilli> as beaconTimer;
 }
 
 implementation{
@@ -34,7 +40,17 @@ implementation{
       call AMControl.start();
 
       dbg(GENERAL_CHANNEL, "Booted\n");
+
+
+      //call delayTimer.startOneShot(START_DELAY*1000)
+      // call <TIMERNAME>.startOneShot(DELAY)
    }
+   
+
+   event void delayTimer.fired() {
+      //this runs when a timer is fired.
+   }
+
 
    event void AMControl.startDone(error_t err){
       if(err == SUCCESS){
