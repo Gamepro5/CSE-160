@@ -25,6 +25,8 @@ module Node{
 
    uses interface NeighborDiscovery;
 
+   uses interface Flooding;
+
    //uses interface Timer<TMilli> as sendTimer;
    uses interface Timer<TMilli> as delayTimer;
    //uses interface Timer<TMilli> as beaconTimer;

@@ -33,5 +33,8 @@ implementation { //specifies general wiring
 
     components NeighborDiscoveryC;
     Node.NeighborDiscovery -> NeighborDiscoveryC;
+
+    components FloodingC;
+    Node.Flooding -> FloodingC;
     
 }
