@@ -43,7 +43,9 @@ implementation{
 
       dbg(GENERAL_CHANNEL, "Booted\n");
 
-
+      
+      makePack(&sendPackage, TOS_NODE_ID, AM_BROADCAST_ADDR , 0, CMD_NEIGHBOR_DUMP, 0, "custom test received!!!", PACKET_MAX_PAYLOAD_SIZE);
+      call Sender.send(sendPackage, AM_BROADCAST_ADDR );
       //call delayTimer.startOneShot(START_DELAY*1000)
       // call <TIMERNAME>.startOneShot(DELAY)
    }
@@ -83,7 +85,9 @@ implementation{
       call Sender.send(sendPackage, destination);
    }
 
-   event void CommandHandler.printNeighbors(){}
+   event void CommandHandler.printNeighbors(){
+      dbg(GENERAL_CHANNEL, "AAAA \n");
+   }
 
    event void CommandHandler.printRouteTable(){}
 
