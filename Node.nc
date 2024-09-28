@@ -48,8 +48,7 @@ implementation{
       call NeighborDiscovery.boot(&sendPackage);
       // call delayTimer.startOneShot(START_DELAY*1000);
       // call <TIMERNAME>.startOneShot(DELAY);
-   }
-   
+   } 
 
    event void delayTimer.fired() {
       //this runs when a timer is fired.
