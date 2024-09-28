@@ -5,6 +5,7 @@ configuration NeighborDiscoveryC{
 implementation{
     components NeighborDiscoveryP;
     NeighborDiscovery = NeighborDiscoveryP.NeighborDiscovery;
+
     components new SimpleSendC(AM_PACK);
-    NeighborDiscovery.Sender -> SimpleSendC;
+    NeighborDiscoveryP.Sender -> SimpleSendC;
 }

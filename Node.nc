@@ -85,7 +85,7 @@ implementation{
             case PROTOCOL_DV:
                break;
             case PROTOCOL_NEIGHBOR_DISCOVERY:
-               call NeighborDiscovery.Dummy(myMsg);
+               call NeighborDiscovery.discovered(myMsg);
                break;
             case PROTOCOL_CMD:
                break;
