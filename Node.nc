@@ -12,6 +12,7 @@
 #include "includes/CommandMsg.h"
 #include "includes/sendInfo.h"
 #include "includes/channels.h"
+#include "includes/protocol.h"
 
 module Node{
    uses interface Boot;
@@ -44,8 +45,7 @@ implementation{
       dbg(GENERAL_CHANNEL, "Booted\n");
 
       
-      makePack(&sendPackage, TOS_NODE_ID, AM_BROADCAST_ADDR , 0, CMD_NEIGHBOR_DUMP, 0, "custom test received!!!", PACKET_MAX_PAYLOAD_SIZE);
-      call Sender.send(sendPackage, AM_BROADCAST_ADDR );
+      call NeighborDiscovery.boot(sendPackage);
       //call delayTimer.startOneShot(START_DELAY*1000)
       // call <TIMERNAME>.startOneShot(DELAY)
    }
@@ -71,7 +71,26 @@ implementation{
       dbg(GENERAL_CHANNEL, "Packet Received\n");
       if(len==sizeof(pack)){
          pack* myMsg=(pack*) payload;
-         dbg(GENERAL_CHANNEL, "Package Payload: %s\n", myMsg->payload);
+         switch (myMsg->protocol) {
+            case PROTOCOL_PING:
+               break;
+            case PROTOCOL_PINGREPLY:
+               break;
+            case PROTOCOL_LINKEDLIST:
+               break;
+            case PROTOCOL_NAME:
+               break;
+            case PROTOCOL_TCP:
+               break;
+            case PROTOCOL_DV:
+               break;
+            case PROTOCOL_NEIGHBOR_DISCOVERY:
+               call NeighborDiscovery.Dummy(myMsg);
+               break;
+            case PROTOCOL_CMD:
+               break;
+
+         }
          return msg;
       }
       dbg(GENERAL_CHANNEL, "Unknown Packet Type %d\n", len);
@@ -85,9 +104,7 @@ implementation{
       call Sender.send(sendPackage, destination);
    }
 
-   event void CommandHandler.printNeighbors(){
-      dbg(GENERAL_CHANNEL, "AAAA \n");
-   }
+   event void CommandHandler.printNeighbors(){}
 
    event void CommandHandler.printRouteTable(){}
 
@@ -102,6 +119,7 @@ implementation{
    event void CommandHandler.setAppServer(){}
 
    event void CommandHandler.setAppClient(){}
+
 
    void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t* payload, uint8_t length){
       Package->src = src;
