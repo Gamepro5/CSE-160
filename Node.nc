@@ -45,7 +45,7 @@ implementation{
       dbg(GENERAL_CHANNEL, "Booted\n");
 
       
-      call NeighborDiscovery.boot(&sendPackage);
+      call NeighborDiscovery.boot();
       // call delayTimer.startPeriodic(5*1000);
       // call <TIMERNAME>.startOneShot(DELAY);
    } 
