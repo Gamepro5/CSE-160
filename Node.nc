@@ -29,7 +29,7 @@ module Node{
    uses interface Flooding;
 
    //uses interface Timer<TMilli> as sendTimer;
-   uses interface Timer<TMilli> as delayTimer;
+   // uses interface Timer<TMilli> as delayTimer;
    //uses interface Timer<TMilli> as beaconTimer;
 }
 
@@ -45,15 +45,16 @@ implementation{
       dbg(GENERAL_CHANNEL, "Booted\n");
 
       
+
       call NeighborDiscovery.boot();
       // call delayTimer.startOneShot(START_DELAY*1000);
-      // call <TIMERNAME>.startOneShot(DELAY);
-   }
-   
 
-   event void delayTimer.fired() {
-      //this runs when a timer is fired.
-   }
+      // call <TIMERNAME>.startOneShot(DELAY);
+   } 
+
+   // event void delayTimer.fired() {
+   //    //this runs when a timer is fired.
+   // }
 
 
    event void AMControl.startDone(error_t err){
@@ -107,7 +108,9 @@ implementation{
       call Sender.send(sendPackage, destination);
    }
 
-   event void CommandHandler.printNeighbors(){}
+   event void CommandHandler.printNeighbors(){
+      call NeighborDiscovery.printNeighbors();
+   }
 
    event void CommandHandler.printRouteTable(){}
 
