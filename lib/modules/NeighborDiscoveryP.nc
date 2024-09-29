@@ -3,7 +3,6 @@ module NeighborDiscoveryP{
     provides interface NeighborDiscovery;
     uses interface Timer<TMilli> as discoveryTimer;
     uses interface SimpleSend as Sender;
-
 }
 
 implementation {
@@ -11,36 +10,31 @@ implementation {
 void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t* payload, uint8_t length);
 
 //array that stores a list of my neighbors.
-// int max_neighbors = 20;
-int neighbors[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int max_neighbors = 20;
+int neighbors[20];
 pack sendPackage;
 int START_DELAY = 1; //in seconds
 int RE_DISCOVERY_INTERVAL = 1;
-
 
 command void NeighborDiscovery.boot(){
     makePack(&sendPackage, TOS_NODE_ID, AM_BROADCAST_ADDR , 0, PROTOCOL_NEIGHBOR_DISCOVERY, 0, "0", PACKET_MAX_PAYLOAD_SIZE);
     call Sender.send(sendPackage, AM_BROADCAST_ADDR );
     call discoveryTimer.startPeriodic( START_DELAY*1000 );// THE TIMERS DO NOT WORK!!!!
     //call discoveryTimer.startOneShot(START_DELAY*1000);
-
 }
 
 
 command void NeighborDiscovery.discovered(pack* myMsg){ 
     // pack sendPackage;
-
     dbg(NEIGHBOR_CHANNEL, "Package Sender: %i, Package Protocol: %i, Package Payload: %s\n", myMsg->src,myMsg->protocol,myMsg->payload);
     if (myMsg->protocol == PROTOCOL_NEIGHBOR_DISCOVERY2) { //this is a reply!
         if (neighbors[myMsg->src-1] == 0) {
             neighbors[myMsg->src-1] = 1;
-
         }
     } else{
         //reply. the number 1 in the message represents that this is a reply.
         makePack(&sendPackage, TOS_NODE_ID, myMsg->src , 0, PROTOCOL_NEIGHBOR_DISCOVERY2, 0, "1", PACKET_MAX_PAYLOAD_SIZE);
         call Sender.send(sendPackage, myMsg->src );
-
         
     }
 }
@@ -53,7 +47,6 @@ event void discoveryTimer.fired() {
     }
     makePack(&sendPackage, TOS_NODE_ID, AM_BROADCAST_ADDR , 0, PROTOCOL_NEIGHBOR_DISCOVERY, 0, "0", PACKET_MAX_PAYLOAD_SIZE);
     call Sender.send(sendPackage, AM_BROADCAST_ADDR );
-
 }
 
 void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t* payload, uint8_t length) {
