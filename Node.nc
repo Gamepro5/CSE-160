@@ -45,7 +45,7 @@ implementation{
       dbg(GENERAL_CHANNEL, "Booted\n");
 
       
-      call NeighborDiscovery.boot(&sendPackage);
+      call NeighborDiscovery.boot();
       // call delayTimer.startOneShot(START_DELAY*1000);
       // call <TIMERNAME>.startOneShot(DELAY);
    }
@@ -85,6 +85,9 @@ implementation{
             case PROTOCOL_DV:
                break;
             case PROTOCOL_NEIGHBOR_DISCOVERY:
+               call NeighborDiscovery.discovered(myMsg);
+               break;
+            case PROTOCOL_NEIGHBOR_DISCOVERY2:
                call NeighborDiscovery.discovered(myMsg);
                break;
             case PROTOCOL_CMD:
