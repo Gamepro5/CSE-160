@@ -46,6 +46,7 @@ implementation{
 
       
       call NeighborDiscovery.boot();
+      call Flooding.boot();
       // call delayTimer.startOneShot(START_DELAY*1000);
       // call <TIMERNAME>.startOneShot(DELAY);
    }
@@ -89,6 +90,9 @@ implementation{
                break;
             case PROTOCOL_NEIGHBOR_DISCOVERY2:
                call NeighborDiscovery.discovered(myMsg);
+               break;
+            case PROTOCOL_FLOODING:
+               call NeighborDiscovery.flood(myMsg);
                break;
             case PROTOCOL_CMD:
                break;

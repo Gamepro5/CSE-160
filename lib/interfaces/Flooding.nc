@@ -1,3 +1,4 @@
 interface Flooding{
-   command void Dummy();
+   command void flood(pack* myMsg);
+   command void boot();
 }

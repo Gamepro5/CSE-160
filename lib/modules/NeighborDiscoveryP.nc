@@ -16,6 +16,10 @@ pack sendPackage;
 int START_DELAY = 1; //in seconds
 int RE_DISCOVERY_INTERVAL = 1;
 
+command int* getNeighbors() {
+    return neighbors;
+}
+
 command void NeighborDiscovery.boot(){
     makePack(&sendPackage, TOS_NODE_ID, AM_BROADCAST_ADDR , 0, PROTOCOL_NEIGHBOR_DISCOVERY, 0, "0", PACKET_MAX_PAYLOAD_SIZE);
     call Sender.send(sendPackage, AM_BROADCAST_ADDR );
