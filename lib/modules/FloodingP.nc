@@ -2,6 +2,7 @@ module FloodingP{
     provides interface Flooding;
     uses interface Timer<TMilli> as startDelayTimer;
     uses interface SimpleSend as Sender;
+    uses interface NeighborDiscovery;
 }
 
 implementation {
@@ -27,15 +28,18 @@ event void startDelayTimer.fired() { // a delay so that neighbor discovery has t
 }
 command void Flooding.flood(pack* myPack) {
     int i;
-    bool duplicatePacket = false;
-    for (i=0;i<20;i++) {
+    bool duplicatePacket = FALSE;
+    int max_neighbors = call NeighborDiscovery.getMaxNeighbors();
+    int* neighbor = call NeighborDiscovery.getNeighbors();
+    dbg(FLOODING_CHANNEL, "The flood begins. max_neighbors=%i\n", max_neighbors);
+    for (i=0;i<max_neighbors;i++) {
         if (packetCache[20] == myPack) {
             //drop the packet on the floor
             dbg(FLOODING_CHANNEL, "I have seen this packet before and I will drop it on the floor.");
-            duplicatePacket = true;
+            duplicatePacket = TRUE;
         }
     }
-    if (duplicatePacket == false) {
+    if (duplicatePacket == FALSE) {
         packetCache[lastUpdatedPacketCacheSlot] = myPack;
         lastUpdatedPacketCacheSlot += 1;
         if (lastUpdatedPacketCacheSlot > 19) {

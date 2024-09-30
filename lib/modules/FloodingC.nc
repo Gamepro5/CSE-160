@@ -10,5 +10,9 @@ implementation{
     FloodingP.startDelayTimer -> startDelayTimer;
 
     components new SimpleSendC(AM_PACK);
-    NeighborDFloodingPiscoveryP.Sender -> SimpleSendC;
+    FloodingP.Sender -> SimpleSendC;
+
+    components NeighborDiscoveryP;
+    FloodingP.NeighborDiscovery -> NeighborDiscoveryP;
+
 }

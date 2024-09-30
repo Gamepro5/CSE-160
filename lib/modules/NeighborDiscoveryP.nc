@@ -16,8 +16,12 @@ pack sendPackage;
 int START_DELAY = 1; //in seconds
 int RE_DISCOVERY_INTERVAL = 1;
 
-command int* getNeighbors() {
+command int* NeighborDiscovery.getNeighbors() {
     return neighbors;
+}
+
+command int NeighborDiscovery.getMaxNeighbors() {
+    return max_neighbors;
 }
 
 command void NeighborDiscovery.boot(){

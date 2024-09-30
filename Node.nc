@@ -92,7 +92,7 @@ implementation{
                call NeighborDiscovery.discovered(myMsg);
                break;
             case PROTOCOL_FLOODING:
-               call NeighborDiscovery.flood(myMsg);
+               call Flooding.flood(myMsg);
                break;
             case PROTOCOL_CMD:
                break;
