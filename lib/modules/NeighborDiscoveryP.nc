@@ -70,7 +70,7 @@ event void discoveryTimer.fired() {
     }
     dbg_clear(NEIGHBOR_CHANNEL, "\n");
     
-    makePack(&sendPackage, TOS_NODE_ID, AM_BROADCAST_ADDR , 0, PROTOCOL_NEIGHBOR_DISCOVERY, 0, "0", PACKET_MAX_PAYLOAD_SIZE);
+    makePack(&sendPackage, TOS_NODE_ID, AM_BROADCAST_ADDR , 1, PROTOCOL_NEIGHBOR_DISCOVERY, 0, "0", PACKET_MAX_PAYLOAD_SIZE);
     call Sender.send(sendPackage, AM_BROADCAST_ADDR );
 }
 

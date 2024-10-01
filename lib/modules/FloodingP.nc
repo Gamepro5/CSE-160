@@ -1,3 +1,5 @@
+#include "../../includes/flood_cache.h"
+
 module FloodingP{
     provides interface Flooding;
     uses interface Timer<TMilli> as startDelayTimer;
@@ -6,66 +8,100 @@ module FloodingP{
 }
 
 implementation {
-//prototype
-void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t* payload, uint8_t length);
+    //prototype
+    void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t* payload, uint8_t length);
 
-uint8_t* packetCache[20];
-int lastUpdatedPacketCacheSlot = 0;
-int START_DELAY = 2.5; //seconds
-//int finalDestination = 12;
-pack sendPackage;
+    // Module variables
+    flood_cache packetCache[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; 
+    int lastUpdatedPacketCacheSlot = 0;
+    int START_DELAY = 2.5; //seconds
+    //int finalDestination = 12;
+    pack sendPackage;
 
-command void Flooding.boot() {
-    if (TOS_NODE_ID == 1) { //only node 1 will start the flooding. this can change.
-        call startDelayTimer.startOneShot(START_DELAY*1000);
+    // Timer needs to be implemented so that when a node sends a packet, it will start the timer
+    // and if the timer expires and no acknowledgement was received, then send the flood packet again.
+    event void startDelayTimer.fired() {
+        int destination = AM_BROADCAST_ADDR;
+        makePack(&sendPackage, TOS_NODE_ID, destination , 20, PROTOCOL_FLOODING, 0, "Hello, flooded world!", PACKET_MAX_PAYLOAD_SIZE);
+        call Sender.send(sendPackage, destination );
     }
-}
 
-event void startDelayTimer.fired() { // a delay so that neighbor discovery has time to happen
-    int destination = AM_BROADCAST_ADDR;
-    makePack(&sendPackage, TOS_NODE_ID, destination , 0, PROTOCOL_FLOODING, 0, "Hello, flooded world!", PACKET_MAX_PAYLOAD_SIZE);
-    call Sender.send(sendPackage, destination );
-}
-command void Flooding.flood(pack* myPack) {
-    int i;
-    bool duplicatePacket = FALSE;
-    int max_neighbors = call NeighborDiscovery.getMaxNeighbors();
-    int* neighbor = call NeighborDiscovery.getNeighbors();
-    dbg(FLOODING_CHANNEL, "Package Sender: %i, Package Protocol: %i, Package Payload: %s\n", myPack->src,myPack->protocol,myPack->payload);
-    for (i=0;i<max_neighbors;i++) {
-        if (packetCache[20] == myPack->payload) {
-            //drop the packet on the floor
-            dbg(FLOODING_CHANNEL, "I have seen this packet before and I will drop it on the floor.");
-            duplicatePacket = TRUE;
+    // Source node broadcasts a flood packet
+    command void Flooding.startFlood(uint16_t destination, uint8_t* payload) {
+        dbg(FLOODING_CHANNEL, "Flooding node %i: %s\n", destination, payload);
+        makePack(&sendPackage, TOS_NODE_ID, destination, 20, PROTOCOL_FLOODING, 0, payload, PACKET_MAX_PAYLOAD_SIZE);
+        call Sender.send(sendPackage, AM_BROADCAST_ADDR);
+    }
+
+    // When a node receives a flood packet
+    command void Flooding.flood(pack* myPack) {
+        flood_cache record;
+        int i;
+        bool duplicatePacket = FALSE;
+        int max_neighbors = call NeighborDiscovery.getMaxNeighbors();
+        int* neighbors = call NeighborDiscovery.getNeighbors();
+        dbg(FLOODING_CHANNEL, "Packet Source: %i, Packet Destination: %i, Packet Protocol: %i, Packet Payload: %s. ", myPack->src,myPack->dest,myPack->protocol,myPack->payload);
+        
+        // If the packet has reached its destination, send a reply flood packet or end the flood
+        if(myPack->dest == TOS_NODE_ID){
+            if(myPack->protocol == PROTOCOL_FLOODING) call Flooding.floodReply(myPack);
+            if(myPack->protocol == PROTOCOL_FLOODING_REPLY) call Flooding.floodEnd(myPack);
+            return;
         }
-    }
-    if (duplicatePacket == FALSE) {
-        packetCache[lastUpdatedPacketCacheSlot] = myPack->payload;
+
+        // If the packet has been seen before, drop it
+        for(i=0;i<20;i++){
+            if (packetCache[i].src == myPack->src && packetCache[i].dest == myPack->dest) {
+                dbg_clear(FLOODING_CHANNEL, "I have seen this packet before and I will drop it on the floor.\n");
+                duplicatePacket = TRUE;
+                return;
+            }
+        }
+        
+        // Otherwise, flood the packet to all neighbors
+        // Creating a record and stores it in the cache
+        record.src = myPack->src;
+        record.dest = myPack->dest;
+        packetCache[lastUpdatedPacketCacheSlot] = record;
+
+        // Moving the cache pointer appropriately for next time the cache needs to be written to
         lastUpdatedPacketCacheSlot += 1;
         if (lastUpdatedPacketCacheSlot > 19) {
             lastUpdatedPacketCacheSlot = 0;
         }
         dbg_clear(FLOODING_CHANNEL, "I am node %i. I am trying to forward this message to: ", TOS_NODE_ID);
+
+        // And sending the node to all neighbors
         for (i=0;i<max_neighbors;i++) {
-            if (neighbor[i] == 1 && i != myPack->src) {
+            if (neighbors[i] == 1) {
                 dbg_clear(FLOODING_CHANNEL, "%i,", i+1);
-                makePack(&sendPackage, TOS_NODE_ID, i+1 , 0, PROTOCOL_FLOODING, 0, myPack->payload, PACKET_MAX_PAYLOAD_SIZE);
-                call Sender.send(sendPackage, i+1 );
+                makePack(&sendPackage, myPack->src, myPack->dest, myPack->TTL-1, myPack->protocol, myPack->seq+1, myPack->payload, PACKET_MAX_PAYLOAD_SIZE);  
+                call Sender.send(sendPackage, i+1);
             }
         }
         dbg_clear(FLOODING_CHANNEL, "\n");
-
     }
 
-    
-}
+    // Broadcasts a reply for the src node of a packet
+    command void Flooding.floodReply(pack* myMsg){
+        dbg_clear(FLOODING_CHANNEL, "Packet received: %s\n", myMsg->payload);
+        makePack(&sendPackage, myMsg->dest, myMsg->src, 20, PROTOCOL_FLOODING_REPLY, 0, "Acknowledgement", PACKET_MAX_PAYLOAD_SIZE);
+        call Sender.send(sendPackage, AM_BROADCAST_ADDR);
+    }
 
-void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t* payload, uint8_t length) {
-      Package->src = src;
-      Package->dest = dest;
-      Package->TTL = TTL;
-      Package->seq = seq;
-      Package->protocol = protocol;
-      memcpy(Package->payload, payload, length);
-}
+    // Handles a reply flood packet being received
+    command void Flooding.floodEnd(pack* myMsg){
+        dbg_clear(FLOODING_CHANNEL, "Packet received: %s\n", myMsg->payload);
+    }
+
+
+    // Function for making a packet
+    void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t* payload, uint8_t length) {
+        Package->src = src;
+        Package->dest = dest;
+        Package->TTL = TTL;
+        Package->seq = seq;
+        Package->protocol = protocol;
+        memcpy(Package->payload, payload, length);
+    }
 }

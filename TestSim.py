@@ -140,12 +140,12 @@ def main():
     s.bootAll();
     s.addChannel(s.COMMAND_CHANNEL);
     s.addChannel(s.GENERAL_CHANNEL);
-    s.addChannel(s.NEIGHBOR_CHANNEL);
+    # s.addChannel(s.NEIGHBOR_CHANNEL);
     s.addChannel(s.FLOODING_CHANNEL);
-    s.runTime(20);
+    s.runTime(100);
 
-    s.flood(1, 2, "Flood this one!");
-    s.runTime(20);
+    s.flood(1, 4, "Flood this one!");
+    s.runTime(1000);
 
     
 

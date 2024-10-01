@@ -79,7 +79,7 @@ implementation{
                 break;
 
             case CMD_FLOOD:
-                dbg(COMMAND_CHANNEL, "Command Type: Client\n");
+                dbg(COMMAND_CHANNEL, "Command Type: Flood\n");
                 signal CommandHandler.flood(buff[0], &buff[1]);
                 break;
 

@@ -65,6 +65,7 @@ implementation{
       //dbg(GENERAL_CHANNEL, "Packet Received\n");
       if(len==sizeof(pack)){
          pack* myMsg=(pack*) payload;
+         if(myMsg->TTL == 0) return msg; //packet is dropped
          switch (myMsg->protocol) {
             case PROTOCOL_PING:
                break;
@@ -84,9 +85,11 @@ implementation{
             case PROTOCOL_FLOODING:
                call Flooding.flood(myMsg);
                break;
+            case PROTOCOL_FLOODING_REPLY:
+               call Flooding.flood(myMsg);
+               break;
             case PROTOCOL_CMD:
                break;
-
          }
          return msg;
       }
@@ -102,9 +105,7 @@ implementation{
    }
 
    event void CommandHandler.flood(uint16_t destination, uint8_t* payload){
-      // int destination = AM_BROADCAST_ADDR;
-      makePack(&sendPackage, TOS_NODE_ID, destination, 20, PROTOCOL_FLOODING, 0, payload, PACKET_MAX_PAYLOAD_SIZE);
-      call Sender.send(sendPackage, destination);
+      call Flooding.startFlood(destination, payload);
    }
 
    event void CommandHandler.printNeighbors(){}
