@@ -23,9 +23,7 @@ module Node{
    uses interface SimpleSend as Sender;
 
    uses interface CommandHandler;
-
    uses interface NeighborDiscovery;
-
    uses interface Flooding;
 
 }
@@ -36,19 +34,14 @@ implementation{
    // Prototypes
    void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t Protocol, uint16_t seq, uint8_t *payload, uint8_t length);
 
+   // Runs on node boot
    event void Boot.booted(){
       call AMControl.start();
-
       dbg(GENERAL_CHANNEL, "Booted\n");
-
       
+      // Starts neighbor discovery module so node can search for neighbors
       call NeighborDiscovery.boot();
-      // call Flooding.boot();
    }
-   
-
-   
-
 
    event void AMControl.startDone(error_t err){
       if(err == SUCCESS){
@@ -59,8 +52,10 @@ implementation{
       }
    }
 
+   // When the node turns off?
    event void AMControl.stopDone(error_t err){}
 
+   // When the node receives a packet
    event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){ // whenever a packet is received, it will go here.
       //dbg(GENERAL_CHANNEL, "Packet Received\n");
       if(len==sizeof(pack)){
@@ -97,18 +92,22 @@ implementation{
       return msg;
    }
 
-
+   // When ping command is executed
    event void CommandHandler.ping(uint16_t destination, uint8_t *payload){
       dbg(GENERAL_CHANNEL, "PING EVENT \n");
       makePack(&sendPackage, TOS_NODE_ID, destination, 0, 0, 0, payload, PACKET_MAX_PAYLOAD_SIZE);
       call Sender.send(sendPackage, destination);
    }
 
+   // When flood command is executed
    event void CommandHandler.flood(uint16_t destination, uint8_t* payload){
       call Flooding.startFlood(destination, payload);
    }
 
-   event void CommandHandler.printNeighbors(){}
+   // When neighborDMP command is executed
+   event void CommandHandler.printNeighbors(){
+      call NeighborDiscovery.printNeighbors();
+   }
 
    event void CommandHandler.printRouteTable(){}
 
@@ -124,7 +123,7 @@ implementation{
 
    event void CommandHandler.setAppClient(){}
 
-
+   // Packet assembly function
    void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t* payload, uint8_t length){
       Package->src = src;
       Package->dest = dest;

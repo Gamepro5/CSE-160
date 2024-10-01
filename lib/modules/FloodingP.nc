@@ -25,7 +25,7 @@ implementation {
     event void startDelayTimer.fired() {
         if(lookingForReply == TRUE){
             if(call Sender.send(resendPackage, AM_BROADCAST_ADDR) == SUCCESS){
-                dbg(FLOODING_CHANNEL, "Flooding node %i: \"%s\"\n", destination, payload);
+                dbg(FLOODING_CHANNEL, "Flooding node %i: \"%s\"\n", resendPackage.dest, resendPackage.payload);
                 call startDelayTimer.startOneShot(5000);
                 lookingForReply = TRUE;
             }

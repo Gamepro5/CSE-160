@@ -27,11 +27,14 @@ command int NeighborDiscovery.getMaxNeighbors() {
     return max_neighbors;
 }
 
+// On module boot (occurs when node boots)
 command void NeighborDiscovery.boot(){
-
+    // Make a packet and broadcast, sending the packet to anyone who can listen
     makePack(&sendPackage, TOS_NODE_ID, AM_BROADCAST_ADDR , 0, PROTOCOL_NEIGHBOR_DISCOVERY, 0, "0", PACKET_MAX_PAYLOAD_SIZE);
     call Sender.send(sendPackage, AM_BROADCAST_ADDR );
-    //call discoveryTimer.startOneShot( RE_DISCOVERY_INTERVAL*1000 );
+    
+    // Initialize rediscovery
+    // call discoveryTimer.startOneShot(0);
     call discoveryTimer.startPeriodic( RE_DISCOVERY_INTERVAL*1000 );
     call discoveryTimer.startPeriodic( DECAY_INTERVAL*1000 );
 }
@@ -72,6 +75,14 @@ event void discoveryTimer.fired() {
     
     makePack(&sendPackage, TOS_NODE_ID, AM_BROADCAST_ADDR , 1, PROTOCOL_NEIGHBOR_DISCOVERY, 0, "0", PACKET_MAX_PAYLOAD_SIZE);
     call Sender.send(sendPackage, AM_BROADCAST_ADDR );
+}
+
+command void NeighborDiscovery.printNeighbors(){
+    int i;
+    dbg(NEIGHBOR_CHANNEL, "Neighbors: , ");
+    for (i=0;i<max_neighbors;i++) {
+        if(neighbors[i] == 1) dbg_clear(NEIGHBOR_CHANNEL, "%i, ", i+1);
+    }
 }
 
 void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t* payload, uint8_t length) {

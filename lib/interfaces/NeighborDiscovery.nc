@@ -4,4 +4,5 @@ interface NeighborDiscovery{
    command void boot();
    command int* getNeighbors();
    command int getMaxNeighbors();
+   command void printNeighbors();
 }
