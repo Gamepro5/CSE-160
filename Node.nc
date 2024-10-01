@@ -28,9 +28,6 @@ module Node{
 
    uses interface Flooding;
 
-   //uses interface Timer<TMilli> as sendTimer;
-   uses interface Timer<TMilli> as delayTimer;
-   //uses interface Timer<TMilli> as beaconTimer;
 }
 
 implementation{
@@ -47,14 +44,10 @@ implementation{
       
       call NeighborDiscovery.boot();
       call Flooding.boot();
-      // call delayTimer.startOneShot(START_DELAY*1000);
-      // call <TIMERNAME>.startOneShot(DELAY);
    }
    
 
-   event void delayTimer.fired() {
-      //this runs when a timer is fired.
-   }
+   
 
 
    event void AMControl.startDone(error_t err){
@@ -86,9 +79,6 @@ implementation{
             case PROTOCOL_DV:
                break;
             case PROTOCOL_NEIGHBOR_DISCOVERY:
-               call NeighborDiscovery.discovered(myMsg);
-               break;
-            case PROTOCOL_NEIGHBOR_DISCOVERY2:
                call NeighborDiscovery.discovered(myMsg);
                break;
             case PROTOCOL_FLOODING:

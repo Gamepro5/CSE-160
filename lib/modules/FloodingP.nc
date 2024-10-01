@@ -9,9 +9,9 @@ implementation {
 //prototype
 void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t* payload, uint8_t length);
 
-pack* packetCache[20];
+uint8_t* packetCache[20];
 int lastUpdatedPacketCacheSlot = 0;
-int START_DELAY = 1; //seconds
+int START_DELAY = 2.5; //seconds
 //int finalDestination = 12;
 pack sendPackage;
 
@@ -31,27 +31,29 @@ command void Flooding.flood(pack* myPack) {
     bool duplicatePacket = FALSE;
     int max_neighbors = call NeighborDiscovery.getMaxNeighbors();
     int* neighbor = call NeighborDiscovery.getNeighbors();
-    dbg(FLOODING_CHANNEL, "The flood begins. max_neighbors=%i\n", max_neighbors);
+    dbg(FLOODING_CHANNEL, "Package Sender: %i, Package Protocol: %i, Package Payload: %s\n", myPack->src,myPack->protocol,myPack->payload);
     for (i=0;i<max_neighbors;i++) {
-        if (packetCache[20] == myPack) {
+        if (packetCache[20] == myPack->payload) {
             //drop the packet on the floor
             dbg(FLOODING_CHANNEL, "I have seen this packet before and I will drop it on the floor.");
             duplicatePacket = TRUE;
         }
     }
     if (duplicatePacket == FALSE) {
-        packetCache[lastUpdatedPacketCacheSlot] = myPack;
+        packetCache[lastUpdatedPacketCacheSlot] = myPack->payload;
         lastUpdatedPacketCacheSlot += 1;
         if (lastUpdatedPacketCacheSlot > 19) {
             lastUpdatedPacketCacheSlot = 0;
         }
-
+        dbg_clear(FLOODING_CHANNEL, "I am node %i. I am trying to forward this message to: ", TOS_NODE_ID);
         for (i=0;i<max_neighbors;i++) {
             if (neighbor[i] == 1 && i != myPack->src) {
-                makePack(&sendPackage, TOS_NODE_ID, i , 0, PROTOCOL_FLOODING, 0, myPack->src, PACKET_MAX_PAYLOAD_SIZE);
-                call Sender.send(sendPackage, i );
+                dbg_clear(FLOODING_CHANNEL, "%i,", i+1);
+                makePack(&sendPackage, TOS_NODE_ID, i+1 , 0, PROTOCOL_FLOODING, 0, myPack->payload, PACKET_MAX_PAYLOAD_SIZE);
+                call Sender.send(sendPackage, i+1 );
             }
         }
+        dbg_clear(FLOODING_CHANNEL, "\n");
 
     }
 
