@@ -28,9 +28,10 @@ implementation {
 
     // Source node broadcasts a flood packet
     command void Flooding.startFlood(uint16_t destination, uint8_t* payload) {
-        dbg(FLOODING_CHANNEL, "Flooding node %i: %s\n", destination, payload);
         makePack(&sendPackage, TOS_NODE_ID, destination, 20, PROTOCOL_FLOODING, 0, payload, PACKET_MAX_PAYLOAD_SIZE);
-        call Sender.send(sendPackage, AM_BROADCAST_ADDR);
+        if(call Sender.send(sendPackage, AM_BROADCAST_ADDR) == SUCCESS){
+            dbg(FLOODING_CHANNEL, "Flooding node %i: %s\n", destination, payload);
+        }
     }
 
     // When a node receives a flood packet
@@ -40,7 +41,7 @@ implementation {
         bool duplicatePacket = FALSE;
         int max_neighbors = call NeighborDiscovery.getMaxNeighbors();
         int* neighbors = call NeighborDiscovery.getNeighbors();
-        dbg(FLOODING_CHANNEL, "Packet Source: %i, Packet Destination: %i, Packet Protocol: %i, Packet Payload: %s. ", myPack->src,myPack->dest,myPack->protocol,myPack->payload);
+        // dbg(FLOODING_CHANNEL, "Packet Source: %i, Packet Destination: %i, Packet Protocol: %i, Packet Payload: %s. ", myPack->src,myPack->dest,myPack->protocol,myPack->payload);
         
         // If the packet has reached its destination, send a reply flood packet or end the flood
         if(myPack->dest == TOS_NODE_ID){
@@ -52,7 +53,7 @@ implementation {
         // If the packet has been seen before, drop it
         for(i=0;i<20;i++){
             if (packetCache[i].src == myPack->src && packetCache[i].dest == myPack->dest) {
-                dbg_clear(FLOODING_CHANNEL, "I have seen this packet before and I will drop it on the floor.\n");
+                dbg(FLOODING_CHANNEL, "I have seen this packet before and I will drop it on the floor.\n");
                 duplicatePacket = TRUE;
                 return;
             }
@@ -69,14 +70,14 @@ implementation {
         if (lastUpdatedPacketCacheSlot > 19) {
             lastUpdatedPacketCacheSlot = 0;
         }
-        dbg_clear(FLOODING_CHANNEL, "I am node %i. I am trying to forward this message to: ", TOS_NODE_ID);
-
+        dbg(FLOODING_CHANNEL, "Received flood packet, forwarding to: ");
         // And sending the node to all neighbors
         for (i=0;i<max_neighbors;i++) {
             if (neighbors[i] == 1) {
-                dbg_clear(FLOODING_CHANNEL, "%i,", i+1);
                 makePack(&sendPackage, myPack->src, myPack->dest, myPack->TTL-1, myPack->protocol, myPack->seq+1, myPack->payload, PACKET_MAX_PAYLOAD_SIZE);  
-                call Sender.send(sendPackage, i+1);
+                if(call Sender.send(sendPackage, i+1) == SUCCESS){
+                    dbg_clear(FLOODING_CHANNEL, "%i, ", i+1);
+                }
             }
         }
         dbg_clear(FLOODING_CHANNEL, "\n");
@@ -84,14 +85,15 @@ implementation {
 
     // Broadcasts a reply for the src node of a packet
     command void Flooding.floodReply(pack* myMsg){
-        dbg_clear(FLOODING_CHANNEL, "Packet received: %s\n", myMsg->payload);
         makePack(&sendPackage, myMsg->dest, myMsg->src, 20, PROTOCOL_FLOODING_REPLY, 0, "Acknowledgement", PACKET_MAX_PAYLOAD_SIZE);
-        call Sender.send(sendPackage, AM_BROADCAST_ADDR);
+        if (call Sender.send(sendPackage, AM_BROADCAST_ADDR) == SUCCESS){
+            dbg(FLOODING_CHANNEL, "Packet received: %s\n", myMsg->payload);
+        }
     }
 
     // Handles a reply flood packet being received
     command void Flooding.floodEnd(pack* myMsg){
-        dbg_clear(FLOODING_CHANNEL, "Packet received: %s\n", myMsg->payload);
+        dbg(FLOODING_CHANNEL, "Packet received: %s\n", myMsg->payload);
     }
 
 
