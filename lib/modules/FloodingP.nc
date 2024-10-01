@@ -15,28 +15,31 @@ implementation {
     flood_cache packetCache[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; 
     int lastUpdatedPacketCacheSlot = 0;
     int START_DELAY = 2.5; //seconds
+    bool lookingForReply = FALSE;
     //int finalDestination = 12;
     pack sendPackage;
 
     // Timer needs to be implemented so that when a node sends a packet, it will start the timer
     // and if the timer expires and no acknowledgement was received, then send the flood packet again.
     event void startDelayTimer.fired() {
-        int destination = AM_BROADCAST_ADDR;
-        makePack(&sendPackage, TOS_NODE_ID, destination , 20, PROTOCOL_FLOODING, 0, "Hello, flooded world!", PACKET_MAX_PAYLOAD_SIZE);
-        call Sender.send(sendPackage, destination );
+        if(lookingForReply == TRUE){
+            call startDelayTimer.startOneShot(5000);
+        }
     }
 
     // Source node broadcasts a flood packet
     command void Flooding.startFlood(uint16_t destination, uint8_t* payload) {
         makePack(&sendPackage, TOS_NODE_ID, destination, 20, PROTOCOL_FLOODING, 0, payload, PACKET_MAX_PAYLOAD_SIZE);
+        call Flooding.addToCache(&sendPackage);
         if(call Sender.send(sendPackage, AM_BROADCAST_ADDR) == SUCCESS){
-            dbg(FLOODING_CHANNEL, "Flooding node %i: %s\n", destination, payload);
+            dbg(FLOODING_CHANNEL, "Flooding node %i: \"%s\"\n", destination, payload);
+            call startDelayTimer.startOneShot(5000);
+            lookingForReply = TRUE;
         }
     }
 
     // When a node receives a flood packet
     command void Flooding.flood(pack* myPack) {
-        flood_cache record;
         int i;
         bool duplicatePacket = FALSE;
         int max_neighbors = call NeighborDiscovery.getMaxNeighbors();
@@ -60,16 +63,9 @@ implementation {
         }
         
         // Otherwise, flood the packet to all neighbors
-        // Creating a record and stores it in the cache
-        record.src = myPack->src;
-        record.dest = myPack->dest;
-        packetCache[lastUpdatedPacketCacheSlot] = record;
 
-        // Moving the cache pointer appropriately for next time the cache needs to be written to
-        lastUpdatedPacketCacheSlot += 1;
-        if (lastUpdatedPacketCacheSlot > 19) {
-            lastUpdatedPacketCacheSlot = 0;
-        }
+        // Storing the packet in the cache
+        call Flooding.addToCache(myPack);
         dbg(FLOODING_CHANNEL, "Received flood packet, forwarding to: ");
         // And sending the node to all neighbors
         for (i=0;i<max_neighbors;i++) {
@@ -85,17 +81,33 @@ implementation {
 
     // Broadcasts a reply for the src node of a packet
     command void Flooding.floodReply(pack* myMsg){
+        dbg(FLOODING_CHANNEL, "Packet received: \"%s\"\n", myMsg->payload);
         makePack(&sendPackage, myMsg->dest, myMsg->src, 20, PROTOCOL_FLOODING_REPLY, 0, "Acknowledgement", PACKET_MAX_PAYLOAD_SIZE);
+        call Flooding.addToCache(&sendPackage);
         if (call Sender.send(sendPackage, AM_BROADCAST_ADDR) == SUCCESS){
-            dbg(FLOODING_CHANNEL, "Packet received: %s\n", myMsg->payload);
+            dbg(FLOODING_CHANNEL, "Flooding node %i: \"%s\"\n", myMsg->src, sendPackage.payload);
         }
     }
 
     // Handles a reply flood packet being received
     command void Flooding.floodEnd(pack* myMsg){
-        dbg(FLOODING_CHANNEL, "Packet received: %s\n", myMsg->payload);
+        dbg(FLOODING_CHANNEL, "Packet received: \"%s\"\n", myMsg->payload);
+        lookingForReply = FALSE;
     }
 
+    command void Flooding.addToCache(pack* myPack){
+        // Create a record and stores it in the cache
+        flood_cache record;
+        record.src = myPack->src;
+        record.dest = myPack->dest;
+        packetCache[lastUpdatedPacketCacheSlot] = record;
+
+        // Move the cache pointer appropriately for next time the cache needs to be written to
+        lastUpdatedPacketCacheSlot += 1;
+        if (lastUpdatedPacketCacheSlot > 19) {
+            lastUpdatedPacketCacheSlot = 0;
+        }
+    }
 
     // Function for making a packet
     void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t* payload, uint8_t length) {
