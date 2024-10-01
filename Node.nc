@@ -43,7 +43,7 @@ implementation{
 
       
       call NeighborDiscovery.boot();
-      call Flooding.boot();
+      // call Flooding.boot();
    }
    
 
@@ -98,6 +98,12 @@ implementation{
    event void CommandHandler.ping(uint16_t destination, uint8_t *payload){
       dbg(GENERAL_CHANNEL, "PING EVENT \n");
       makePack(&sendPackage, TOS_NODE_ID, destination, 0, 0, 0, payload, PACKET_MAX_PAYLOAD_SIZE);
+      call Sender.send(sendPackage, destination);
+   }
+
+   event void CommandHandler.flood(uint16_t destination, uint8_t* payload){
+      // int destination = AM_BROADCAST_ADDR;
+      makePack(&sendPackage, TOS_NODE_ID, destination, 20, PROTOCOL_FLOODING, 0, payload, PACKET_MAX_PAYLOAD_SIZE);
       call Sender.send(sendPackage, destination);
    }
 
