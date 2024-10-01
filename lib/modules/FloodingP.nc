@@ -18,12 +18,17 @@ implementation {
     bool lookingForReply = FALSE;
     //int finalDestination = 12;
     pack sendPackage;
+    pack resendPackage;
 
     // Timer needs to be implemented so that when a node sends a packet, it will start the timer
     // and if the timer expires and no acknowledgement was received, then send the flood packet again.
     event void startDelayTimer.fired() {
         if(lookingForReply == TRUE){
-            call startDelayTimer.startOneShot(5000);
+            if(call Sender.send(resendPackage, AM_BROADCAST_ADDR) == SUCCESS){
+                dbg(FLOODING_CHANNEL, "Flooding node %i: \"%s\"\n", destination, payload);
+                call startDelayTimer.startOneShot(5000);
+                lookingForReply = TRUE;
+            }
         }
     }
 
@@ -34,6 +39,7 @@ implementation {
         if(call Sender.send(sendPackage, AM_BROADCAST_ADDR) == SUCCESS){
             dbg(FLOODING_CHANNEL, "Flooding node %i: \"%s\"\n", destination, payload);
             call startDelayTimer.startOneShot(5000);
+            resendPackage = sendPackage;
             lookingForReply = TRUE;
         }
     }
