@@ -17,7 +17,7 @@ int neighbors[20];
 int neighborsTTL[20];
 pack sendPackage;
 int RE_DISCOVERY_INTERVAL = 1; //in seconds
-float DECAY_INTERVAL = 0.1; //in seconds
+float DECAY_INTERVAL = 0.2; //in seconds
 
 command int* NeighborDiscovery.getNeighbors() {
     return neighbors;
@@ -36,18 +36,19 @@ command void NeighborDiscovery.boot(){
     // Initialize rediscovery
     // call discoveryTimer.startOneShot(0);
     call discoveryTimer.startPeriodic( RE_DISCOVERY_INTERVAL*1000 );
-    call discoveryTimer.startPeriodic( DECAY_INTERVAL*1000 );
+    call decayTimer.startPeriodic( DECAY_INTERVAL*1000 );
 }
 
 
 command void NeighborDiscovery.discovered(pack* myMsg){
     //dbg(NEIGHBOR_CHANNEL, "Package Sender: %i, Package Protocol: %i, Package Payload: %s\n", myMsg->src,myMsg->protocol,myMsg->payload);
-    if (myMsg->protocol == PROTOCOL_NEIGHBOR_DISCOVERY) {
-        if (neighbors[myMsg->src-1] == 0) {
-            neighbors[myMsg->src-1] = 1;
-            neighborsTTL[myMsg->src-1] = 0;
-        }
+    
+    if (neighbors[myMsg->src-1] == 0) {
+        neighbors[myMsg->src-1] = 1;
+        dbg(NEIGHBOR_CHANNEL, "Node decay has been reset: %i, stored in index %i\n", myMsg->src,myMsg->src-1);
+        neighborsTTL[myMsg->src-1] = 0;
     }
+    
 }
 
 event void decayTimer.fired() { //for each neighbor, increase it's decay value by 1 each decay tick. If it reaches "max_neighbor_life", forget that neighbor.
@@ -56,6 +57,7 @@ event void decayTimer.fired() { //for each neighbor, increase it's decay value b
         if (neighbors[i] == 1) {
             neighborsTTL[i] += 1;
             if (neighborsTTL[i] >= max_neighbor_life) {
+                dbg(NEIGHBOR_CHANNEL, "Node has decayed: %i\n", i+1);
                 neighbors[i] = 0;
                 neighborsTTL[i] = 0;
             }
