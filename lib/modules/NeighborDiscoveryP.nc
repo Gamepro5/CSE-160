@@ -30,7 +30,7 @@ command int NeighborDiscovery.getMaxNeighbors() {
 // On module boot (occurs when node boots)
 command void NeighborDiscovery.boot(){
     // Make a packet and broadcast, sending the packet to anyone who can listen
-    makePack(&sendPackage, TOS_NODE_ID, AM_BROADCAST_ADDR , 0, PROTOCOL_NEIGHBOR_DISCOVERY, 0, "0", PACKET_MAX_PAYLOAD_SIZE);
+    makePack(&sendPackage, TOS_NODE_ID, AM_BROADCAST_ADDR , 1, PROTOCOL_NEIGHBOR_DISCOVERY, 0, "0", PACKET_MAX_PAYLOAD_SIZE);
     call Sender.send(sendPackage, AM_BROADCAST_ADDR );
     
     // Initialize rediscovery
@@ -42,12 +42,11 @@ command void NeighborDiscovery.boot(){
 
 command void NeighborDiscovery.discovered(pack* myMsg){
     //dbg(NEIGHBOR_CHANNEL, "Package Sender: %i, Package Protocol: %i, Package Payload: %s\n", myMsg->src,myMsg->protocol,myMsg->payload);
+
+    neighbors[myMsg->src-1] = 1;
+    //dbg(NEIGHBOR_CHANNEL, "Node decay has been reset: %i, stored in index %i\n", myMsg->src,myMsg->src-1);
+    neighborsTTL[myMsg->src-1] = 0;
     
-    if (neighbors[myMsg->src-1] == 0) {
-        neighbors[myMsg->src-1] = 1;
-        dbg(NEIGHBOR_CHANNEL, "Node decay has been reset: %i, stored in index %i\n", myMsg->src,myMsg->src-1);
-        neighborsTTL[myMsg->src-1] = 0;
-    }
     
 }
 
