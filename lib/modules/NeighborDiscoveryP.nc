@@ -17,7 +17,7 @@ implementation
     uint8_t i;                      // global iterator
     bool newNeighbor;               // keeps track of whether a neighbor is found in the table or not
 
-    pack sendPackage;
+    pack sendPackage;               // Space used to create and send a package
 
     // Initialization of Neighbor Discovery module
     command void NeighborDiscovery.init()
@@ -52,7 +52,9 @@ implementation
             if(table[i].address != 0)
             {
                 // Calculate the link quality
-                table[i].quality = alpha * table[i].received + (1 - alpha) * table[i].quality;
+                if(table[i].lastSeq == sequenceNum - 1) table[i].quality = alpha * 1 + (1 - alpha) * table[i].quality;
+                else table[i].quality = alpha * 0 + (1 - alpha) * table[i].quality;
+                
                 // If the quality is equal to or above the cutoff threshold
                 if(table[i].quality >= activeCutoff)
                 {
@@ -75,8 +77,6 @@ implementation
                         table[i].active = FALSE;
                     }
                 }
-                // Resets the received value to 0 for next discovery interval
-                if(table[i].received == 1) table[i].received = 0;
             }
             // If the table was updated, signal the updated neighbor table to other modules
             if(updated == TRUE) signal NeighborDiscovery.updateNeighbors(&table, sizeof(Neighbor)*MAX_NEIGHBOR);

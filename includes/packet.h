@@ -71,8 +71,6 @@ void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t protocol, uin
 	memcpy(Package->payload, payload, length);
 }
 
-//makeDiscoveryPack(&sendPackage, TOS_NODE_ID, AM_BROADCAST_ADDR, PROTOCOL_NEIGHBOR_DISCOVERY, sequenceNum++, 0, "Discovering", PACKET_MAX_PAYLOAD_SIZE);
-
 void makeDiscoveryPack(pack *Package, uint16_t src, uint16_t dest, uint16_t protocol, uint16_t seq, uint8_t reply)
 {
 	discoveryheader header;

@@ -18,7 +18,7 @@ typedef nx_struct CommandMsg
 {
 	nx_uint16_t dest;
 	nx_uint8_t id;
-	nx_uint8_t payload[CMD_PACKET_MAX_PAYLOAD_SIZE];	
+	nx_uint8_t payload[CMD_PACKET_MAX_PAYLOAD_SIZE];
 }
 CommandMsg;
 

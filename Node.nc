@@ -26,6 +26,7 @@ module Node{
 
     uses interface NeighborDiscovery;
     uses interface Flooding;
+    uses interface Routing;
 }
 
 implementation
@@ -61,31 +62,24 @@ implementation
             pack* myMsg=(pack*) payload;
             uint8_t message[myMsg->length];
             // if(myMsg->TTL == 0) return msg; //packet is dropped
-            switch (myMsg->protocol) {
-            case PROTOCOL_PING:
-                memcpy(&message, &(myMsg->payload), myMsg->length);
-                dbg(GENERAL_CHANNEL, "Package Payload: %s\n", message);
-                break;
-            case PROTOCOL_PINGREPLY:
-                break;
-            case PROTOCOL_LINKEDLIST:
-                break;
-            case PROTOCOL_NAME:
-                break;
-            case PROTOCOL_TCP:
-                break;
-            case PROTOCOL_DV:
-                break;
-            case PROTOCOL_NEIGHBOR_DISCOVERY:
-                call NeighborDiscovery.received(myMsg);
-                break;
-            case PROTOCOL_FLOODING:
-                call Flooding.flood(myMsg);
-                break;
-            case PROTOCOL_FLOODING_REPLY:
-                break;
-            case PROTOCOL_CMD:
-                break;
+            switch (myMsg->protocol)
+            {
+                case PROTOCOL_PING:
+                    memcpy(&message, &(myMsg->payload), myMsg->length);
+                    dbg(GENERAL_CHANNEL, "Package Payload: %s\n", message);
+                    break;
+                case PROTOCOL_PINGREPLY:
+                    break;
+                case PROTOCOL_NEIGHBOR_DISCOVERY:
+                    call NeighborDiscovery.received(myMsg);
+                    break;
+                case PROTOCOL_FLOODING:
+                    call Flooding.flood(myMsg);
+                    break;
+                case PROTOCOL_FLOODING_REPLY:
+                    break;
+                case PROTOCOL_CMD:
+                    break;
             }
             return msg;
         }

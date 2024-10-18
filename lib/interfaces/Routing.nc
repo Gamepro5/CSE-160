@@ -1,4 +1,4 @@
 interface Routing
 {
-   // add module command/event declarations here
+   command void received();
 }

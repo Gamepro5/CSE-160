@@ -5,5 +5,8 @@ module RoutingP
 
 implementation
 {
-    // add implementation here
+    command void Routing.received()
+    {
+        
+    }
 }
