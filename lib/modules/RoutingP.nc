@@ -5,12 +5,14 @@ module RoutingP
     uses interface Flooding;
 
     uses interface Timer<TMilli> as waitTimer;
+    uses interface SimpleSend as Sender;
 }
 
 implementation
 {
     void dijkstra();
-
+    bool isNeighbor(uint16_t NODE_ID);
+    
     Neighbor neighborTable[MAX_NEIGHBOR];
     uint8_t neighborCount;
     LinkState linkStates[MAX_ROUTING];
@@ -110,6 +112,8 @@ implementation
             if(i == neighborCount) payload[FLOODING_MAX_PAYLOAD_SIZE - 1] = 1;
             else payload[FLOODING_MAX_PAYLOAD_SIZE - 1] = 0;
 
+            memcpy(linkStates[TOS_NODE_ID - 1].neighbors, &payload, FLOODING_MAX_PAYLOAD_SIZE - 1);
+
             dbg(ROUTING_CHANNEL, "INIT FLOOD\n");
             call Flooding.startFlood(AM_BROADCAST_ADDR, &payload, PROTOCOL_LINK_STATE);
         }
@@ -121,8 +125,6 @@ implementation
         pack myMsgCopy = *myMsg;
         floodingheader* header = (floodingheader*)&(myMsgCopy.payload);
         uint16_t* payload = header->payload;
-        bool finished = FALSE;
-        bool found = FALSE;
 
         dbg(ROUTING_CHANNEL, "RECEIVED %sLINK STATE FROM %i: ", (header->payload[FLOODING_MAX_PAYLOAD_SIZE - 1] == 1) ? "LAST " : "", header->floodsrc);
         
@@ -132,74 +134,22 @@ implementation
             for(i = 0; i < FLOODING_MAX_PAYLOAD_SIZE/2; i++)
             {
                 dbg_clear(ROUTING_CHANNEL, "%u, ", *(payload + i));
+                linkStates[header->floodsrc - 1].neighbors[i] = *(payload + i);
             }
             dbg_clear(ROUTING_CHANNEL, "\n");
-
-            // Store into table
-            // linkStates[header->floodsrc - 1].table = header->payload;
-            linkStates[header->floodsrc - 1].considered = FALSE;
-            memcpy(linkStates[header->floodsrc - 1].table, header->payload, FLOODING_MAX_PAYLOAD_SIZE - 1);
         }
     }
 
-    // command void Routing.receivedLinkStatePacket(pack* myMsg)
-    // {
-    //     floodingheader* header = (floodingheader*)&(myMsg->payload);
-    //     // linkstateheader* LSA = (linkstateheader*)&(header->payload);
-    //     uint8_t* payload = header->payload;
-    //     bool finished = FALSE;
-    //     bool found = FALSE;
-
-    //     dbg(ROUTING_CHANNEL, "RECEIVED PACKET %i FROM %i\n", header->seq, header->floodsrc);
-    //     dbg(FLOODING_CHANNEL, "TTL: %i, Src: %i, Dest: %i, Floodsrc: %i, Seq: %i, ", header->TTL, myMsg->src, myMsg->dest, header->floodsrc, header->seq);
-    //     // if(call Flooding.flood(myMsg) == SUCCESS)
-    //     // {
-    //         for(i = 0; i < TABLE_CACHE_SIZE; i++)
-    //         {
-    //             if(cache[i].floodsrc == header->floodsrc)
-    //             {
-    //                 if((cache[i].received + 1)*FLOODING_MAX_PAYLOAD_SIZE < sizeof(Neighbor)*MAX_NEIGHBOR)
-    //                 {
-    //                     memcpy((&cache[i].table) + cache[i].received*FLOODING_MAX_PAYLOAD_SIZE, payload, FLOODING_MAX_PAYLOAD_SIZE);
-    //                     cache[i].received++;
-    //                 }
-    //                 else
-    //                 {
-    //                     memcpy((&cache[i].table) + cache[i].received*FLOODING_MAX_PAYLOAD_SIZE, payload, sizeof(Neighbor)*MAX_NEIGHBOR - cache[i].received*FLOODING_MAX_PAYLOAD_SIZE);
-    //                     cache[i].received++;
-    //                     finished = TRUE;
-    //                 }
-    //                 found = TRUE;
-    //                 break;
-    //             }
-    //         }
-    //         if(found == FALSE)
-    //         {
-    //             TableCache update;
-    //             update.floodsrc = header->floodsrc;
-    //             update.received = 1;
-    //             memcpy(&update.table, payload, LINKSTATE_MAX_PAYLOAD_SIZE);
-    //             cache[cachePointer++] = update;
-
-    //             dbg(ROUTING_CHANNEL, "NEW TABLE CACHE FOR %i!\n", header->floodsrc);
-    //         }
-    //         // After processing payload,
-    //         // Parse and send the data
-    //         for(i = 0; i < sizeof(Neighbor)*MAX_NEIGHBOR - LINKSTATE_MAX_PAYLOAD_SIZE; i = i + LINKSTATE_MAX_PAYLOAD_SIZE)
-    //         {
-    //             memcpy(&payload, &table + i, LINKSTATE_MAX_PAYLOAD_SIZE);
-    //             // myMsg->src = TOS_NODE_ID;
-    //             call Flooding.flood(myMsg);
-    //         }
-    //         memcpy(&payload, &table + i, sizeof(Neighbor)*MAX_NEIGHBOR - i);
-    //         call Flooding.flood(myMsg);
-    //     // }
-    //     // call Flooding.flood(myMsg);
-    // }
-
-    command void Routing.forward(uint16_t destination, uint8_t* payload)
+    command void Routing.forward(pack* myMsg)
     {
-        dbg(ROUTING_CHANNEL, "Forwarding\n");
+        if(myMsg->dest == TOS_NODE_ID)
+        {
+            dbg(ROUTING_CHANNEL, "Payload received from %i: \"%s\"\n", myMsg->src, myMsg->payload);
+            return;
+        }
+        if(myMsg->src == TOS_NODE_ID) dbg(ROUTING_CHANNEL, "Sending \"%s\" to %i. Forwarding to %i..\n", myMsg->payload, myMsg->dest, table[myMsg->dest-1].to);
+        else dbg(ROUTING_CHANNEL, "Src: %i, Dest: %i, Forwarding to %i..\n", myMsg->src, myMsg->dest, table[myMsg->dest-1].to);
+        call Sender.send(*myMsg, table[myMsg->dest-1].to);
     }
 
     command void Routing.printLinkState()
@@ -209,6 +159,14 @@ implementation
         {
             if(table[i].dest != 0)
             dbg_clear(ROUTING_CHANNEL, "                              %02i   %02i    %03i    %02i    %03i\n", table[i].dest, table[i].to, table[i].cost, table[i].toAlt, table[i].costAlt);
+            // int j;
+            // dbg(ROUTING_CHANNEL, "%i: ", i+1);
+            // for(j = 0; j < MAX_NEIGHBOR; j++)
+            // {
+            //     if(linkStates[i].neighbors[j] != 0)
+            //         dbg_clear(ROUTING_CHANNEL, "%i ", linkStates[i].neighbors[j]);
+            // }
+            // dbg_clear(ROUTING_CHANNEL, "\n");
         }
     }
 
@@ -220,52 +178,92 @@ implementation
     void dijkstra()
     {
         Route update;
-        tablePointer = 0;
 
-        update.dest = 0;
         for(i = 0; i < MAX_ROUTING; i++)
         {
-            update.dest = i+1;
-            update.to = 0;
-            if() update.cost = INFINITY;
-            update.toAlt = 0;
-            update.costAlt = INFINITY;
-            table[tablePointer++] = update;
+            if(i+1 == TOS_NODE_ID)
+            {
+                update.dest = TOS_NODE_ID;
+                update.to = 0;
+                update.cost = 0;
+                update.toAlt = 0;
+                update.costAlt = 0;
+                update.considered = TRUE;
+            }
+            else if(isNeighbor(i+1) == TRUE)
+            {
+                update.dest = i+1;
+                update.to = i+1;
+                update.cost = 1;
+                update.toAlt = 0;
+                update.costAlt = INFINITY;
+                update.considered = FALSE;
+            }
+            else
+            {
+                update.dest = i+1;
+                update.to = 0;
+                update.cost = INFINITY;
+                update.toAlt = 0;
+                update.costAlt = INFINITY;
+                update.considered = FALSE;
+            }
+            table[i] = update;
         }
-        update.dest = TOS_NODE_ID;
-        update.to = 0;
-        update.cost = 0;
-        update.toAlt = 0;
-        update.costAlt = INFINITY;
-        table[TOS_NODE_ID - 1] = update;
         
         while(1 == 1)
         {
-            bool unconsidered = TRUE
-            for(i == 0; i < MAX_ROUTING; i++)
+            uint8_t minCost = INFINITY;
+            
+            bool allNodesConsidered = TRUE;
+            for(i = 0; i < MAX_ROUTING; i++)
             {
-                if(linkStates[i].considered == TRUE) unconsidered = FALSE;
+                if(table[i].considered == FALSE)
+                {
+                    allNodesConsidered = FALSE;
+                    break;
+                }
             }
-            if(unconsidered == FALSE) break;
+            if(allNodesConsidered == TRUE) break;
+            
+            for(i = 0; i < MAX_ROUTING; i++)
+            {
+                if(table[i].considered == TRUE){ }
+                else if(minCost == (uint8_t)INFINITY) minCost = i;
+                else if(table[i].cost < table[minCost].cost) minCost = i;
+            }
 
+            for(i = 0; i < MAX_NEIGHBOR; i++)
+            {
+                uint16_t current = linkStates[minCost].neighbors[i];
+                if(current != 0 && table[current-1].considered == FALSE)
+                {
+                    dbg(ROUTING_CHANNEL, "Calculating new cost for %i from %i... \n", current, minCost+1);
+                    if(table[minCost].cost + 1 < table[current-1].cost)
+                    {
+                        table[current-1].costAlt = table[current-1].cost;
+                        table[current-1].toAlt = table[current-1].to;
 
+                        table[current-1].cost = table[minCost].cost + 1;
+                        table[current-1].to = table[minCost].to;
+                    }
+                    else if(table[minCost].cost + 1 < table[current-1].costAlt)
+                    {
+                        table[current-1].costAlt = table[minCost].cost + 1;
+                        table[current-1].toAlt = table[minCost].to;
+                    }
+                }
+            }
+            table[minCost].considered = TRUE;
         }
-        // for(i = 0; i < MAX_NEIGHBOR; i++)
-        // {
-        //     if(neighborTable[i].active == TRUE)
-        //     if(linkStates[i].considered == FALSE)
-        //     {
-
-        //     }
-        // }
-
     }
 
-    void isNeighbor(uint16_t NODE_ID)
+    bool isNeighbor(uint16_t NODE_ID)
     {
-        for(i = 0; i < neighborCount; i++)
+        int j;
+        for(j = 0; j < neighborCount; j++)
         {
-            if(neighborTable[i].address == NODE_ID) return TRUE;
+            if(neighborTable[j].address == NODE_ID) return TRUE;
         }
         return FALSE;
     }

@@ -85,6 +85,7 @@ implementation
                     call Routing.receivedLinkStatePacket(myMsg);
                     break;
                 case PROTOCOL_ROUTING:
+                    call Routing.forward(myMsg);
                     break;
             }
             return msg;
@@ -113,7 +114,8 @@ implementation
 
     event void CommandHandler.send(uint16_t destination, uint8_t* payload)
     {
-        call Routing.forward(destination, payload);
+        makePack(&sendPackage, TOS_NODE_ID, destination, PROTOCOL_ROUTING, payload, PACKET_MAX_PAYLOAD_SIZE);
+        call Routing.forward(&sendPackage);
     }
 
     event void CommandHandler.printNeighbors()

@@ -6,10 +6,11 @@
 #include "packet.h"
 #include "neighbor.h"
 
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
 typedef struct LinkState
 {
-	bool considered;
-    nx_uint16_t table[MAX_NEIGHBOR];
+    nx_uint16_t neighbors[MAX_NEIGHBOR];
 }
 LinkState;
 

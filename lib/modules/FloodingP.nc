@@ -102,7 +102,8 @@ implementation
         for(i = 0; i < FLOOD_CACHE_SIZE; i++)
         {
             // If the cached record matches the packet received
-            if(packetCache[i].floodsrc == header->floodsrc && packetCache[i].seq == header->seq)
+            if((packetCache[i].floodsrc == header->floodsrc && packetCache[i].seq == header->seq)
+                || (sentCache[i].floodsrc == header->floodsrc && sentCache[i].seq == header->seq))
             {
                 dbg_clear(FLOODING_CHANNEL, "Packet seen before, dropping...\n");
                 

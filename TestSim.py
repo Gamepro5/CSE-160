@@ -20,21 +20,21 @@ class TestSim:
     CMD_SP_CALC=13
 
     # CHANNELS - see includes/channels.h
-    COMMAND_CHANNEL="command";
-    GENERAL_CHANNEL="general";
+    COMMAND_CHANNEL="command"
+    GENERAL_CHANNEL="general"
 
     # Project 1
-    NEIGHBOR_CHANNEL="neighbor";
-    FLOODING_CHANNEL="flooding";
+    NEIGHBOR_CHANNEL="neighbor"
+    FLOODING_CHANNEL="flooding"
 
     # Project 2
-    ROUTING_CHANNEL="routing";
+    ROUTING_CHANNEL="routing"
 
     # Project 3
-    TRANSPORT_CHANNEL="transport";
+    TRANSPORT_CHANNEL="transport"
 
     # Personal Debuggin Channels for some of the additional models implemented.
-    HASHMAP_CHANNEL="hashmap";
+    HASHMAP_CHANNEL="hashmap"
 
     # Initialize Vars
     numMote=0
@@ -54,7 +54,7 @@ class TestSim:
         # Read topology file.
         topoFile = 'topo/'+topoFile
         f = open(topoFile, "r")
-        self.numMote = int(f.readline());
+        self.numMote = int(f.readline())
         print 'Number of Motes', self.numMote
         for line in f:
             s = line.split()
@@ -70,10 +70,10 @@ class TestSim:
     def loadNoise(self, noiseFile):
         if self.numMote == 0:
             print "Create a topo first"
-            return;
+            return
 
         # Get and Create a Noise Model
-        noiseFile = 'noise/'+noiseFile;
+        noiseFile = 'noise/'+noiseFile
         noise = open(noiseFile, "r")
         for line in noise:
             str1 = line.strip()
@@ -89,13 +89,13 @@ class TestSim:
     def bootNode(self, nodeID):
         if self.numMote == 0:
             print "Create a topo first"
-            return;
+            return
         self.t.getNode(nodeID).bootAtTime(1333*nodeID);
 
     def bootAll(self):
-        i=0;
+        i=0
         for i in self.moteids:
-            self.bootNode(i);
+            self.bootNode(i)
 
     def moteOff(self, nodeID):
         self.t.getNode(nodeID).turnOff();
@@ -113,8 +113,8 @@ class TestSim:
 
     # Generic Command
     def sendCMD(self, ID, dest, payloadStr):
-        self.msg.set_dest(dest);
-        self.msg.set_id(ID);
+        self.msg.set_dest(dest)
+        self.msg.set_id(ID)
         self.msg.setString_payload(payloadStr)
 
         self.pkt.setData(self.msg.data)
@@ -137,8 +137,8 @@ class TestSim:
         self.sendCMD(self.CMD_FLOOD, source, "{0}{1}".format(chr(dest),msg));
 
     def addChannel(self, channelName, out=sys.stdout):
-        print 'Adding Channel', channelName;
-        self.t.addChannel(channelName, out);
+        print 'Adding Channel', channelName
+        self.t.addChannel(channelName, out)
 
     def send(self, source, dest, msg):
         self.sendCMD(self.CMD_SEND, source, "{0}{1}".format(chr(dest),msg));
@@ -152,49 +152,41 @@ class TestSim:
 def main():
     s = TestSim();
     s.runTime(10);
-    s.loadTopo("crazy.topo");
+    # s.loadTopo("crazy.topo");
     # s.loadTopo("long_line.topo");
-    # s.loadTopo("example.topo");
-    s.loadNoise("no_noise.txt");
-    s.bootAll();
-    s.addChannel(s.COMMAND_CHANNEL);
-    s.addChannel(s.GENERAL_CHANNEL);
-    # s.addChannel(s.NEIGHBOR_CHANNEL);
-    s.addChannel(s.FLOODING_CHANNEL);
-    s.addChannel(s.ROUTING_CHANNEL);
+    s.loadTopo("example.topo")
+    s.loadNoise("no_noise.txt")
+    s.bootAll()
+    s.addChannel(s.COMMAND_CHANNEL)
+    s.addChannel(s.GENERAL_CHANNEL)
+    # s.addChannel(s.NEIGHBOR_CHANNEL)
+    s.addChannel(s.FLOODING_CHANNEL)
+    s.addChannel(s.ROUTING_CHANNEL)
     
-    totalNodes = 6
-
-    s.runTime(20);
-    # s.ping(1, 2, "Hello, World");
-    # s.runTime(10);
-    # s.ping(1, 3, "Hi!");
-    # s.runTime(10);
-    s.runTime(500);
-    i = 0
-    for i in range(totalNodes+1):
-        s.neighborDMP(i);
-        s.runTime(1);
-    for i in range(totalNodes+1):
-        s.startLinkState(i);
-        s.runTime(1);
-    # s.startLinkState(i);
-    s.runTime(500);
-    for i in range(totalNodes+1):
-        s.calcSP(i);
-        s.runTime(1);
-    s.runTime(500);
-    for i in range(totalNodes+1):
-        s.linkStateDMP(i);
-        s.runTime(1);
-    # s.linkStateDMP(1);
-    s.runTime(100);
+    s.runTime(500)
     
-    # s.flood(1, 9, "Hi 9!!");
-    # s.runTime(1);
-    # s.flood(2, 5, "Hi five");
-    # s.runTime(1000);
+    totalNodes = 9
     
+    for i in range(totalNodes+1):
+        s.neighborDMP(i)
+        s.runTime(1)
+    
+    for i in range(totalNodes+1):
+        s.startLinkState(i)
+        s.runTime(200)
+    
+    for i in range(totalNodes+1):
+        s.calcSP(i)
+        s.runTime(200)
+    
+    for i in range(totalNodes+1):
+        s.linkStateDMP(i)
+        s.runTime(1)
+    
+    s.send(4, 1, "Hi four!")
+    s.runTime(1)
+    s.send(4, 6, "Hi six!")
+    s.runTime(100)
     
 if __name__ == '__main__':
     main()

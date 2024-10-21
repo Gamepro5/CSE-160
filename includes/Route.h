@@ -16,6 +16,7 @@ typedef struct Route
     nx_uint8_t cost;
     nx_uint16_t toAlt;
     nx_uint8_t costAlt;
+    bool considered;
 }
 Route;
 
