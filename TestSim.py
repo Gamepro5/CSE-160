@@ -10,10 +10,14 @@ from CommandMsg import *
 class TestSim:
     moteids=[]
     # COMMAND TYPES
-    CMD_PING = 0
-    CMD_NEIGHBOR_DUMP = 1
+    CMD_PING=0
+    CMD_NEIGHBOR_DUMP=1
+    CMD_LINKSTATE_DUMP=2
     CMD_ROUTE_DUMP=3
     CMD_FLOOD=10
+    CMD_SEND=11
+    CMD_LINKSTATE_START=12
+    CMD_SP_CALC=13
 
     # CHANNELS - see includes/channels.h
     COMMAND_CHANNEL="command";
@@ -123,6 +127,9 @@ class TestSim:
     def neighborDMP(self, destination):
         self.sendCMD(self.CMD_NEIGHBOR_DUMP, destination, "neighbor command");
 
+    def linkStateDMP(self, destination):
+        self.sendCMD(self.CMD_LINKSTATE_DUMP, destination, "link state command");
+
     def routeDMP(self, destination):
         self.sendCMD(self.CMD_ROUTE_DUMP, destination, "routing command");
 
@@ -133,18 +140,30 @@ class TestSim:
         print 'Adding Channel', channelName;
         self.t.addChannel(channelName, out);
 
+    def send(self, source, dest, msg):
+        self.sendCMD(self.CMD_SEND, source, "{0}{1}".format(chr(dest),msg));
+
+    def startLinkState(self, destination):
+        self.sendCMD(self.CMD_LINKSTATE_START, destination, "link state command");
+    
+    def calcSP(self, destination):
+        self.sendCMD(self.CMD_SP_CALC, destination, "SP calculation command");
+
 def main():
     s = TestSim();
     s.runTime(10);
-    # s.loadTopo("crazy.topo");
+    s.loadTopo("crazy.topo");
     # s.loadTopo("long_line.topo");
-    s.loadTopo("example.topo");
+    # s.loadTopo("example.topo");
     s.loadNoise("no_noise.txt");
     s.bootAll();
     s.addChannel(s.COMMAND_CHANNEL);
     s.addChannel(s.GENERAL_CHANNEL);
     # s.addChannel(s.NEIGHBOR_CHANNEL);
     s.addChannel(s.FLOODING_CHANNEL);
+    s.addChannel(s.ROUTING_CHANNEL);
+    
+    totalNodes = 6
 
     s.runTime(20);
     # s.ping(1, 2, "Hello, World");
@@ -153,13 +172,28 @@ def main():
     # s.runTime(10);
     s.runTime(500);
     i = 0
-    for i in range(20):
+    for i in range(totalNodes+1):
         s.neighborDMP(i);
         s.runTime(1);
-    s.flood(1, 9, "Hi 9!!");
-    # s.runTime(10);
+    for i in range(totalNodes+1):
+        s.startLinkState(i);
+        s.runTime(1);
+    # s.startLinkState(i);
+    s.runTime(500);
+    for i in range(totalNodes+1):
+        s.calcSP(i);
+        s.runTime(1);
+    s.runTime(500);
+    for i in range(totalNodes+1):
+        s.linkStateDMP(i);
+        s.runTime(1);
+    # s.linkStateDMP(1);
+    s.runTime(100);
+    
+    # s.flood(1, 9, "Hi 9!!");
+    # s.runTime(1);
     # s.flood(2, 5, "Hi five");
-    s.runTime(1000);
+    # s.runTime(1000);
     
     
 if __name__ == '__main__':

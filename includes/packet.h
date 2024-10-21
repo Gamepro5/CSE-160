@@ -11,6 +11,7 @@
 
 #define DISCOVERY_HEADER_LENGTH 3
 #define FLOODING_HEADER_LENGTH 7
+#define LINKSTATE_HEADER_LENGTH 1
 
 enum
 {
@@ -18,6 +19,8 @@ enum
 	PACKET_MAX_PAYLOAD_SIZE = 28 - PACKET_HEADER_LENGTH,
 	
 	FLOODING_MAX_PAYLOAD_SIZE = PACKET_MAX_PAYLOAD_SIZE - FLOODING_HEADER_LENGTH,
+
+	LINKSTATE_MAX_PAYLOAD_SIZE = FLOODING_MAX_PAYLOAD_SIZE - LINKSTATE_HEADER_LENGTH,
 
 	MAX_TTL = 15
 };
@@ -49,6 +52,13 @@ typedef nx_struct floodingheader
 	nx_uint8_t payload[FLOODING_MAX_PAYLOAD_SIZE];
 }
 floodingheader;
+
+typedef nx_struct linkstateheader
+{
+	nx_uint8_t hops;
+	nx_uint8_t payload[LINKSTATE_MAX_PAYLOAD_SIZE];
+}
+linkstateheader;
 
 /*
  * logPack

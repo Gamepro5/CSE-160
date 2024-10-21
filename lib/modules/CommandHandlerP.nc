@@ -84,6 +84,21 @@ implementation
                 signal CommandHandler.flood(buff[0], &buff[1]);
                 break;
             
+            case CMD_LINKSTATE_START:
+                dbg(COMMAND_CHANNEL, "Command Type: Link State Start\n");
+                signal CommandHandler.startLinkState();
+                break;
+            
+            case CMD_SEND:
+                dbg(COMMAND_CHANNEL, "Command Type: Send\n");
+                signal CommandHandler.send(buff[0], &buff[1]);
+                break;
+
+            case CMD_SP_CALC:
+                dbg(COMMAND_CHANNEL, "Command Type: Calculate Shortest Paths\n");
+                signal CommandHandler.calculateSP();
+                break;
+
             default:
                 dbg(COMMAND_CHANNEL, "CMD_ERROR: \"%d\" does not match any known commands.\n", msg->id);
                 break;

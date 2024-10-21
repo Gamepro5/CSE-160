@@ -9,13 +9,15 @@ module NeighborDiscoveryP
 implementation
 {
     Neighbor table[MAX_NEIGHBOR];
+    uint8_t neighborCount = 0;
     uint8_t tablePointer = 0;
     uint16_t sequenceNum = 0;       // initial sequence number
     int TIMER_INTERVAL = 800;       // in milliseconds
-    float alpha = 0.75;             // alpha for EWMA (between 0 and 1)
-    float activeCutoff = 0.25;      // cutoff percentage for determining whether a node is really a neighbor
+    float alpha = 0.3;             // alpha for EWMA (between 0 and 1)
+    float activeCutoff = 0.1;      // cutoff percentage for determining whether a node is really a neighbor
     uint8_t i;                      // global iterator
     bool newNeighbor;               // keeps track of whether a neighbor is found in the table or not
+    bool updated = FALSE;           // Boolean to keep track of if an update has occured to the table
 
     pack sendPackage;               // Space used to create and send a package
 
@@ -27,7 +29,6 @@ implementation
         null.address = 0;
         null.quality = 0;
         null.active = FALSE;
-        null.received = 0;
         null.lastSeq = 0;
         
         // For each index in the neighbor table, make it default (null)
@@ -43,8 +44,6 @@ implementation
     // Neighbor Discovery Timer
     event void discoveryTimer.fired()
     {
-        // Boolean to keep track of if an update has occured to the table
-        bool updated = FALSE;
         // For each neighbor in the table
         for(i = 0; i < MAX_NEIGHBOR; i++)
         {
@@ -79,7 +78,8 @@ implementation
                 }
             }
             // If the table was updated, signal the updated neighbor table to other modules
-            if(updated == TRUE) signal NeighborDiscovery.updateNeighbors(&table, sizeof(Neighbor)*MAX_NEIGHBOR);
+            if(updated == TRUE) signal NeighborDiscovery.updateNeighbors(&table, sizeof(Neighbor)*MAX_NEIGHBOR, neighborCount);
+            updated = FALSE;
         }
         // Rebroadcast neighbor discovery packets
         call NeighborDiscovery.broadcast();
@@ -124,7 +124,6 @@ implementation
                 if(table[i].address == myMsg->src)
                 {
                     // Set to received and the last sequence number received
-                    table[i].received = 1;
                     table[i].lastSeq = header->seq;
                     
                     // The packet received was not from a new neighbor so set to FALSE
@@ -141,12 +140,13 @@ implementation
                 update.address = myMsg->src;
                 update.quality = 0.5;
                 update.active = TRUE;
-                update.received = 1;
                 update.lastSeq = header->seq;
                 table[tablePointer++] = update;
+                updated = TRUE;
                 
                 // If the table pointer reached the end of the table, nove to beginning
                 if(tablePointer >= MAX_NEIGHBOR) tablePointer = 0;
+                if(++neighborCount > MAX_NEIGHBOR) neighborCount = MAX_NEIGHBOR;
             }
         }
     }
@@ -173,4 +173,13 @@ implementation
             }
         }
     }
+
+    // command void NeighborDiscovery.isNeighbor(uint16_t NODE_ID)
+    // {
+    //     for(i = 0; i < neighborCount; i++)
+    //     {
+    //         if(table[i].address == NODE_ID) return TRUE;
+    //     }
+    //     return FALSE;
+    // }
 }

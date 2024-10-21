@@ -14,8 +14,12 @@
 #include "includes/channels.h"
 #include "includes/neighbor.h"
 #include "includes/flood_cache.h"
+#include "includes/Route.h"
+#include "includes/LinkState.h"
 
-module Node{
+
+module Node
+{
     uses interface Boot;
 
     uses interface SplitControl as AMControl;
@@ -45,6 +49,7 @@ implementation
         {
             dbg(GENERAL_CHANNEL, "Radio On\n");
             call NeighborDiscovery.init();
+            call Routing.init();
         }
         else
         {
@@ -76,9 +81,10 @@ implementation
                 case PROTOCOL_FLOODING:
                     call Flooding.flood(myMsg);
                     break;
-                case PROTOCOL_FLOODING_REPLY:
+                case PROTOCOL_LINK_STATE:
+                    call Routing.receivedLinkStatePacket(myMsg);
                     break;
-                case PROTOCOL_CMD:
+                case PROTOCOL_ROUTING:
                     break;
             }
             return msg;
@@ -97,7 +103,17 @@ implementation
 
     event void CommandHandler.flood(uint16_t destination, uint8_t* payload)
     {
-        call Flooding.startFlood(destination, payload);
+        call Flooding.startFlood(destination, payload, PROTOCOL_FLOODING);
+    }
+
+    event void CommandHandler.startLinkState()
+    {
+        call Routing.floodLinkState();
+    }
+
+    event void CommandHandler.send(uint16_t destination, uint8_t* payload)
+    {
+        call Routing.forward(destination, payload);
     }
 
     event void CommandHandler.printNeighbors()
@@ -107,7 +123,10 @@ implementation
 
     event void CommandHandler.printRouteTable(){}
 
-    event void CommandHandler.printLinkState(){}
+    event void CommandHandler.printLinkState()
+    {
+        call Routing.printLinkState();
+    }
 
     event void CommandHandler.printDistanceVector(){}
 
@@ -119,5 +138,10 @@ implementation
 
     event void CommandHandler.setAppClient(){}
 
-    event void NeighborDiscovery.updateNeighbors(void* data, uint8_t len){}
+    event void CommandHandler.calculateSP()
+    {
+        call Routing.calculateSP();
+    }
+
+    event void NeighborDiscovery.updateNeighbors(void* data, uint8_t len, uint8_t count){}
 }

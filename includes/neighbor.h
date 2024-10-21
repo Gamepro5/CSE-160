@@ -5,14 +5,13 @@
 
 #include "packet.h"
 
-#define MAX_NEIGHBOR 20
+#define MAX_NEIGHBOR 10
 
 typedef struct Neighbor
 {
 	nx_uint16_t address;
     float quality;
     bool active;
-    nx_uint8_t received;
     nx_uint16_t lastSeq;
 }
 Neighbor;
