@@ -5,5 +5,5 @@ interface Routing
    command void receivedLinkStatePacket(pack* myMsg);
    command void forward(pack* myMsg);
    command void calculateSP();
-   command void printLinkState();
+   command void printRoutingTable();
 }

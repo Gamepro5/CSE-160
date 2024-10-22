@@ -49,10 +49,10 @@ implementation
             // Restart the timer
             call waitTimer.startOneShot(TIMER_INTERVAL);
         }
-        // // Otherwise if not looking for a reply
+        // Otherwise if not looking for a reply
         else if(sentCache[readSentCache].dest == AM_BROADCAST_ADDR) dbg_clear(FLOODING_CHANNEL, "Not expecting a reply...\n");
         else dbg_clear(FLOODING_CHANNEL, "Reply was received, terminating...\n");
-        readSentCache++;
+        if(++readSentCache == FLOOD_CACHE_SIZE) readSentCache = 0;
     }
 
     // Source node broadcasts a flood packet

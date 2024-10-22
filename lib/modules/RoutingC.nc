@@ -17,6 +17,9 @@ implementation
     components new TimerMilliC() as waitTimer;
     RoutingP.waitTimer -> waitTimer;
 
+    components new TimerMilliC() as reCalcTimer;
+    RoutingP.reCalcTimer -> reCalcTimer;
+
     components new SimpleSendC(AM_PACK);
     RoutingP.Sender -> SimpleSendC;
 }

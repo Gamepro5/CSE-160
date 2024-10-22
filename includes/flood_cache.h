@@ -15,4 +15,15 @@ typedef nx_struct flood_cache
 }
 flood_cache;
 
+typedef struct pack_cache
+{
+	nx_uint16_t src;
+	nx_uint16_t seq;
+	nx_uint8_t received;
+	nx_uint16_t dest;
+	bool sentAlt;
+	nx_uint8_t payload[ROUTING_MAX_PAYLOAD_SIZE];
+}
+pack_cache;
+
 #endif
