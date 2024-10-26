@@ -46,7 +46,6 @@ def main():
     s.runTime(10)
     s.send(3, 8, "wow!")
     s.runTime(10)
-    s.send(1, 9, "costly!")
     s.runTime(10)
     s.runTime(500)
     

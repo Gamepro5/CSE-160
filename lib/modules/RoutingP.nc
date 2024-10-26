@@ -135,7 +135,7 @@ implementation
             }
             if(i == neighborCount) payload[FLOODING_MAX_PAYLOAD_SIZE - 1] = 1;
             else payload[FLOODING_MAX_PAYLOAD_SIZE - 1] = 0;
-
+            //copy my neighbors into the payload.
             memcpy(linkStates[TOS_NODE_ID - 1].neighbors, &payload, FLOODING_MAX_PAYLOAD_SIZE - 1);
 
             // dbg(ROUTING_CHANNEL, "INIT FLOOD\n");
@@ -167,6 +167,7 @@ implementation
                 linkStates[header->floodsrc - 1].offset = linkStates[header->floodsrc - 1].lastReceived - linkStates[header->floodsrc - 1].firstReceived + 1;
             }
 
+            //recontsruct the packet (since sending the enire packet is too large)
             for(i = 0; i < FLOODING_MAX_PAYLOAD_SIZE/2; i++)
             {
                 uint16_t target;
