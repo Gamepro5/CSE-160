@@ -13,7 +13,7 @@
 #define FLOODING_HEADER_LENGTH 7
 #define LINKSTATE_HEADER_LENGTH 2
 #define ROUTING_HEADER_LENGTH 4
-#define TRANSPORT_HEADER_LEGNTH 5
+#define TRANSPORT_HEADER_LEGNTH 7
 
 enum
 {
@@ -78,6 +78,8 @@ routingheader;
 
 typedef nx_struct transportheader
 {
+	nx_uint8_t srcPort;
+	nx_uint8_t destPort;
 	nx_uint16_t seq;
 	nx_uint8_t TTL;
 	nx_uint8_t length;

@@ -39,8 +39,20 @@ implementation
    }
 
    command error_t Transport.receive(pack* package)
-   {
+   { //dispach the packet to the right TCP sub protocol
     
+    /*
+    nx_uint8_t srcPort;
+	nx_uint8_t destPort;
+	nx_uint16_t seq;
+	nx_uint8_t TTL;
+	nx_uint8_t length;
+	nx_uint8_t flags;
+	nx_uint8_t payload[ROUTING_MAX_PAYLOAD_SIZE];
+    */
+        transportHeader* header = (transportHeader*)&(package->payload);
+
+
    }
 
    command uint16_t Transport.read(socket_t fd, uint8_t *buff, uint16_t bufflen)

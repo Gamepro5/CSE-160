@@ -92,6 +92,9 @@ implementation
                 case PROTOCOL_ROUTING_REPLY:
                     call Routing.forward(myMsg);
                     break;
+                case PROTOCOL_TCP:
+                    call Transport.receive(myMsg);
+                    break;
             }
             return msg;
         }
