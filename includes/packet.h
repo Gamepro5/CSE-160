@@ -13,6 +13,7 @@
 #define FLOODING_HEADER_LENGTH 7
 #define LINKSTATE_HEADER_LENGTH 2
 #define ROUTING_HEADER_LENGTH 4
+#define TRANSPORT_HEADER_LEGNTH 5
 
 enum
 {
@@ -24,6 +25,8 @@ enum
 	LINKSTATE_MAX_PAYLOAD_SIZE = FLOODING_MAX_PAYLOAD_SIZE - LINKSTATE_HEADER_LENGTH,
 
 	ROUTING_MAX_PAYLOAD_SIZE = PACKET_MAX_PAYLOAD_SIZE - PACKET_HEADER_LENGTH,
+
+	TRANSPORT_MAX_PAYLOAD_SIZE = PACKET_MAX_PAYLOAD_SIZE - TRANSPORT_HEADER_LEGNTH,
 
 	MAX_TTL = 20
 };
@@ -69,9 +72,19 @@ typedef nx_struct routingheader
 	nx_uint16_t seq;
 	nx_uint8_t TTL;
 	nx_uint8_t length;
-	nx_uint8_t payload[LINKSTATE_MAX_PAYLOAD_SIZE];
+	nx_uint8_t payload[ROUTING_MAX_PAYLOAD_SIZE];
 }
 routingheader;
+
+typedef nx_struct transportheader
+{
+	nx_uint16_t seq;
+	nx_uint8_t TTL;
+	nx_uint8_t length;
+	nx_uint8_t flags;
+	nx_uint8_t payload[ROUTING_MAX_PAYLOAD_SIZE];
+}
+transportheader;
 
 /*
  * logPack
@@ -134,6 +147,23 @@ void makeRoutePack(pack *Package, uint16_t src, uint16_t dest, uint16_t protocol
 	header.TTL = TTL;
 	header.seq = seq;
 	header.length = ROUTING_MAX_PAYLOAD_SIZE;
+	memcpy(&header.payload, payload, header.length);
+
+	Package->length = PACKET_MAX_PAYLOAD_SIZE;
+	memcpy(Package->payload, &header, Package->length);
+}
+
+void makeTransportPack(pack *Package, uint16_t src, uint16_t dest, uint16_t protocol, uint16_t TTL, uint16_t seq, uint8_t flags, uint8_t* payload)
+{
+	transportheader header;
+	Package->src = src;
+	Package->dest = dest;
+	Package->protocol = protocol;
+	
+	header.TTL = TTL;
+	header.seq = seq;
+	header.flags = flags;
+	header.length = TRANSPORT_MAX_PAYLOAD_SIZE;
 	memcpy(&header.payload, payload, header.length);
 
 	Package->length = PACKET_MAX_PAYLOAD_SIZE;

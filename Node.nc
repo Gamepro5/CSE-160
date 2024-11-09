@@ -16,6 +16,7 @@
 #include "includes/flood_cache.h"
 #include "includes/Route.h"
 #include "includes/LinkState.h"
+#include "includes/socket.h"
 
 
 module Node
@@ -31,6 +32,7 @@ module Node
     uses interface NeighborDiscovery;
     uses interface Flooding;
     uses interface Routing;
+    uses interface Transport;
 }
 
 implementation

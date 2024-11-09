@@ -1,6 +1,3 @@
-#include "../../packet.h"
-#include "../../includes/socket.h"
-
 /**
  * The Transport interface handles sockets and is a layer of abstraction
  * above TCP. This will be used by the application layer to set up TCP

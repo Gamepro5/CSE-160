@@ -28,7 +28,7 @@ def main():
     for i in range(totalNodes+1):
         s.startLinkState(i)
         s.runTime(50)
-    s.runTime(100)
+    s.runTime(200)
 
     for i in range(totalNodes+1):
         s.calcSP(i)
@@ -38,17 +38,15 @@ def main():
         s.linkStateDMP(i)
         s.runTime(1)
     
-    s.send(1, 4, "Hi four!")
-    s.runTime(10)
+    s.send(1, 4, "Hi four its me number one!!")
+    s.runTime(50)
     s.send(4, 9, "Hi nine!")
-    s.runTime(10)
+    s.runTime(50)
     s.send(2, 7, "okay!")
-    s.runTime(10)
+    s.runTime(50)
     s.send(3, 8, "wow!")
-    s.runTime(10)
-    s.send(1, 9, "costly!")
-    s.runTime(10)
-    s.runTime(500)
+    s.runTime(50)
+    # s.runTime(500)
     
 if __name__ == '__main__':
     main()

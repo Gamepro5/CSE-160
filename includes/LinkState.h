@@ -14,7 +14,8 @@ typedef struct LinkState
     nx_uint16_t firstReceived;
     nx_uint16_t lastReceived;
     nx_uint16_t offset;
-    nx_uint16_t neighbors[MAX_NEIGHBOR];
+    // Neighbor neighbors[MAX_NEIGHBOR];
+    uint8_t neighbors[MAX_NEIGHBOR];
 }
 LinkState;
 
