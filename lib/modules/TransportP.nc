@@ -51,8 +51,8 @@ implementation
 	nx_uint8_t payload[ROUTING_MAX_PAYLOAD_SIZE];
     */
         transportHeader* header = (transportHeader*)&(package->payload);
-
-
+        uint8_t flag_syn = header->flags & 1;
+        uint8_t flag_ack = header->flags & 2;
    }
 
    command uint16_t Transport.read(socket_t fd, uint8_t *buff, uint16_t bufflen)

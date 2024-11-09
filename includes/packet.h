@@ -82,8 +82,10 @@ typedef nx_struct transportheader
 	nx_uint8_t destPort;
 	nx_uint16_t seq;
 	nx_uint8_t TTL;
-	nx_uint8_t length;
 	nx_uint8_t flags;
+	nx_uint8_t windowSize;
+	nx_uint8_t ack;
+	nx_uint8_t length;
 	nx_uint8_t payload[ROUTING_MAX_PAYLOAD_SIZE];
 }
 transportheader;
@@ -155,7 +157,7 @@ void makeRoutePack(pack *Package, uint16_t src, uint16_t dest, uint16_t protocol
 	memcpy(Package->payload, &header, Package->length);
 }
 
-void makeTransportPack(pack *Package, uint16_t src, uint16_t dest, uint16_t protocol, uint16_t TTL, uint16_t seq, uint8_t flags, uint8_t* payload)
+void makeTransportPack(pack *Package, uint16_t src, uint16_t dest, uint16_t protocol, uint16_t TTL, uint16_t seq, uint8_t flags, uint8_t windowSize, uint8_t ack, uint8_t* payload)
 {
 	transportheader header;
 	Package->src = src;
@@ -165,6 +167,8 @@ void makeTransportPack(pack *Package, uint16_t src, uint16_t dest, uint16_t prot
 	header.TTL = TTL;
 	header.seq = seq;
 	header.flags = flags;
+	header.windowSize = windowSize;
+	header.ack = ack;
 	header.length = TRANSPORT_MAX_PAYLOAD_SIZE;
 	memcpy(&header.payload, payload, header.length);
 
