@@ -45,8 +45,9 @@ def main():
     s.send(2, 7, "okay!")
     s.runTime(50)
     s.send(3, 8, "wow!")
-    s.runTime(50)
-    # s.runTime(500)
+    s.runTime(10)
+    s.runTime(10)
+    s.runTime(500)
     
 if __name__ == '__main__':
     main()
