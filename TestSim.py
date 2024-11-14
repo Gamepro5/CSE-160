@@ -18,6 +18,9 @@ class TestSim:
     CMD_SEND=11
     CMD_LINKSTATE_START=12
     CMD_SP_CALC=13
+    CMD_TCP_CONNECT=14
+    CMD_TCP_LISTEN=15
+    CMD_TCP_CLOSE=16
 
     # CHANNELS - see includes/channels.h
     COMMAND_CHANNEL="command"
@@ -148,6 +151,15 @@ class TestSim:
     
     def calcSP(self, destination):
         self.sendCMD(self.CMD_SP_CALC, destination, "SP calculation command");
+
+    def connectTCP(self, source, dest, port):
+        self.sendCMD(self.CMD_TCP_CONNECT, source, "{0}{1}".format(chr(dest),chr(port)));
+
+    def listenTCP(self, source, port):
+        self.sendCMD(self.CMD_TCP_LISTEN, source, "{0}".format(chr(port)));
+
+    def closeTCP(self, source, port):
+        self.sendCMD(self.CMD_TCP_CLOSE, source, "{0}".format(chr(port)));
 
 def main():
     s = TestSim();

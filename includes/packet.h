@@ -157,13 +157,15 @@ void makeRoutePack(pack *Package, uint16_t src, uint16_t dest, uint16_t protocol
 	memcpy(Package->payload, &header, Package->length);
 }
 
-void makeTransportPack(pack *Package, uint16_t src, uint16_t dest, uint16_t protocol, uint16_t TTL, uint16_t seq, uint8_t flags, uint8_t windowSize, uint8_t ack, uint8_t* payload)
+void makeTransportPack(pack *Package, uint16_t src, uint16_t dest, uint16_t protocol, uint8_t srcPort, uint8_t destPort, uint16_t TTL, uint16_t seq, uint8_t flags, uint8_t windowSize, uint8_t ack, uint8_t* payload)
 {
 	transportheader header;
 	Package->src = src;
 	Package->dest = dest;
 	Package->protocol = protocol;
 	
+	header.srcPort = srcPort;
+	header.destPort = destPort;
 	header.TTL = TTL;
 	header.seq = seq;
 	header.flags = flags;

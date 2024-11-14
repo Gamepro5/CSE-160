@@ -154,4 +154,36 @@ implementation
     }
 
     event void NeighborDiscovery.updateNeighbors(void* data, uint8_t len, uint8_t count){}
+
+    event void CommandHandler.connectTCP(uint16_t addr, socket_port_t port)
+    {
+        socket_addr_t dest;
+        dest.addr = addr;
+        dest.port = port;
+        dbg(TRANSPORT_CHANNEL, "dest.addr=%i, dest.port=%i\n", dest.addr, dest.port);
+        if(call Transport.connect(call Transport.socket(), &dest) == SUCCESS)
+        {
+            dbg(TRANSPORT_CHANNEL, "Connection request sent to %i:%i\n", addr, port);
+        }
+        else dbg(TRANSPORT_CHANNEL, "Error: No ports open!\n");
+    }
+
+    event void CommandHandler.closeTCP(socket_t fd)
+    {
+        if(!(call Transport.close(fd) == SUCCESS))
+        {
+            dbg(TRANSPORT_CHANNEL, "Error: Port %i isn't open!\n", fd);
+        }
+    }
+
+    event void CommandHandler.listenTCP(socket_t fd)
+    {
+        if(call Transport.listen(fd) == SUCCESS)
+        {
+            dbg(TRANSPORT_CHANNEL, "Now listening on port %i\n", fd);
+        }
+        else dbg(TRANSPORT_CHANNEL, "Error: Port %i is already in use!\n", fd);
+    }
+
+    event void Routing.updateRouteTable(void* data, uint8_t len) {}
 }

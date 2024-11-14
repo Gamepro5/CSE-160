@@ -99,6 +99,21 @@ implementation
                 signal CommandHandler.calculateSP();
                 break;
 
+            case CMD_TCP_CONNECT:
+                dbg(COMMAND_CHANNEL, "Command Type: TCP Connect\n");
+                signal CommandHandler.connectTCP(buff[0], buff[1]);
+                break;
+
+            case CMD_TCP_CLOSE:
+                dbg(COMMAND_CHANNEL, "Command Type: TCP Close\n");
+                signal CommandHandler.closeTCP(buff[0]);
+                break;
+
+            case CMD_TCP_LISTEN:
+                dbg(COMMAND_CHANNEL, "Command Type: TCP Listen\n");
+                signal CommandHandler.listenTCP(buff[0]);
+                break;
+
             default:
                 dbg(COMMAND_CHANNEL, "CMD_ERROR: \"%d\" does not match any known commands.\n", msg->id);
                 break;

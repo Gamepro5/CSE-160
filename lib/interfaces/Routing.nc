@@ -6,4 +6,5 @@ interface Routing
    command void forward(pack* myMsg);
    command void calculateSP();
    command void printRoutingTable();
+   event void updateRouteTable(void* data, uint8_t len);
 }

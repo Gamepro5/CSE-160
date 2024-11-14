@@ -11,8 +11,11 @@ implementation
     components RoutingP;
     TransportP.Routing -> RoutingP;
 
-    components new TimerMilliC() as waitTimer;
-    TransportP.waitTimer -> waitTimer;
+    components new TimerMilliC() as connectTimer;
+    TransportP.connectTimer -> connectTimer;
+
+    components new TimerMilliC() as activeTimer;
+    TransportP.activeTimer -> activeTimer;
 
     components new SimpleSendC(AM_PACK);
     TransportP.Sender -> SimpleSendC;

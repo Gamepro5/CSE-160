@@ -15,7 +15,7 @@ implementation
     bool isActiveNeighbor(uint16_t NODE_ID);
     void addToCache(pack* Package, bool sentAlt);
     
-    Neighbor neighborTable[MAX_NEIGHBOR];
+    // Neighbor neighborTable[MAX_NEIGHBOR];
     uint8_t neighborCount;
     LinkState linkStates[MAX_ROUTING];
     Route table[MAX_ROUTING];
@@ -80,7 +80,7 @@ implementation
 
     event void NeighborDiscovery.updateNeighbors(void* data, uint8_t len, uint8_t count)
     {
-        memcpy(&neighborTable, data, len);
+        memcpy(linkStates[TOS_NODE_ID - 1].neighbors, data, len);
         neighborCount = count;
         // if(builtRoutingTable == TRUE) call Routing.floodLinkState();
     }
@@ -119,11 +119,11 @@ implementation
                     *(writeToPayload + j) = 0;
                 }
                 // Check for active here using ACTIVE property later
-                else if(neighborTable[i].active == TRUE)
+                else if(linkStates[TOS_NODE_ID-1].neighbors[i].active == TRUE)
                 {
                     // memcpy(writeToPayload + j, &(neighborTable[i].address), sizeof(uint16_t));
-                    *(writeToPayload + j) = neighborTable[i].address;
-                    dbg(ROUTING_CHANNEL, "Neighbor %i at index %i copied to position %i in payload\n", neighborTable[i].address, i, j);
+                    *(writeToPayload + j) = linkStates[TOS_NODE_ID-1].neighbors[i].address;
+                    dbg(ROUTING_CHANNEL, "Neighbor %i at index %i copied to position %i in payload\n", linkStates[TOS_NODE_ID-1].neighbors[i].address, i, j);
                     i++;
                 }
                 else
@@ -135,8 +135,6 @@ implementation
             }
             if(i == neighborCount) payload[FLOODING_MAX_PAYLOAD_SIZE - 1] = 1;
             else payload[FLOODING_MAX_PAYLOAD_SIZE - 1] = 0;
-            //copy my neighbors into the payload.
-            memcpy(linkStates[TOS_NODE_ID - 1].neighbors, &payload, FLOODING_MAX_PAYLOAD_SIZE - 1);
 
             // dbg(ROUTING_CHANNEL, "INIT FLOOD\n");
             call Flooding.startFlood(AM_BROADCAST_ADDR, &payload, PROTOCOL_LINK_STATE);
@@ -167,7 +165,6 @@ implementation
                 linkStates[header->floodsrc - 1].offset = linkStates[header->floodsrc - 1].lastReceived - linkStates[header->floodsrc - 1].firstReceived + 1;
             }
 
-            //recontsruct the packet (since sending the enire packet is too large)
             for(i = 0; i < FLOODING_MAX_PAYLOAD_SIZE/2; i++)
             {
                 uint16_t target;
@@ -257,7 +254,6 @@ implementation
     command void Routing.calculateSP()
     {
         dijkstra();
-        signal Routing.updateRouteTable(&table, sizeof(Route)*MAX_ROUTING);
     }
 
     void dijkstra()
@@ -337,7 +333,7 @@ implementation
             {
                 // Current is defined as the address of the neighborOfUnderConsideration neighbor node
                 // of the lowest cost unconsidered node being evaluated
-                uint16_t neighborOfUnderConsideration = linkStates[underConsideration].neighbors[i];
+                uint16_t neighborOfUnderConsideration = linkStates[underConsideration].neighbors[i].address;
                 // uint16_t neighborOfUnderConsideration = i+1;
 
                 // If the neighbor address is NOT 0 and the neighbor's currently defined TO
@@ -378,9 +374,9 @@ implementation
         int j;
         for(j = 0; j < neighborCount; j++)
         {
-            if(neighborTable[j].address == NODE_ID)
+            if(linkStates[TOS_NODE_ID-1].neighbors[j].address == NODE_ID)
             {
-                if(neighborTable[j].active == TRUE) return TRUE;
+                if(linkStates[TOS_NODE_ID-1].neighbors[j].active == TRUE) return TRUE;
                 else return FALSE;
             }
         }
