@@ -142,4 +142,7 @@ interface Transport
     *   to listen else FAIL.
     */
    command error_t listen(socket_t fd);
+
+   command socket_t retrieve(socket_addr_t *addr);
+   command error_t send(uint16_t addr, socket_port_t port, uint8_t* payload);
 }

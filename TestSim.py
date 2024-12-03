@@ -21,6 +21,7 @@ class TestSim:
     CMD_TCP_CONNECT=14
     CMD_TCP_LISTEN=15
     CMD_TCP_CLOSE=16
+    CMD_TCP_SEND=17
 
     # CHANNELS - see includes/channels.h
     COMMAND_CHANNEL="command"
@@ -160,6 +161,9 @@ class TestSim:
 
     def closeTCP(self, source, port):
         self.sendCMD(self.CMD_TCP_CLOSE, source, "{0}".format(chr(port)));
+
+    def sendTCP(self, source, dest, port, msg):
+        self.sendCMD(self.CMD_TCP_SEND, source, "{0}{1}{2}".format(chr(dest),chr(port),msg));
 
 def main():
     s = TestSim();

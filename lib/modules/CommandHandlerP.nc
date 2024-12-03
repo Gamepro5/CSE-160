@@ -114,6 +114,11 @@ implementation
                 signal CommandHandler.listenTCP(buff[0]);
                 break;
 
+            case CMD_TCP_SEND:
+                dbg(COMMAND_CHANNEL, "Command Type: TCP Send\n");
+                signal CommandHandler.sendTCP(buff[0], buff[1], &buff[2]);
+                break;
+
             default:
                 dbg(COMMAND_CHANNEL, "CMD_ERROR: \"%d\" does not match any known commands.\n", msg->id);
                 break;
@@ -125,6 +130,7 @@ implementation
             post processCommand();
         }
     }
+
     event message_t* Receive.receive(message_t* raw_msg, void* payload, uint8_t len){
         if (! call Pool.empty()){
             call Queue.enqueue(raw_msg);

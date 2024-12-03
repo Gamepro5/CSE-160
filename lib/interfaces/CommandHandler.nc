@@ -17,4 +17,5 @@ interface CommandHandler
    event void connectTCP(uint16_t addr, socket_port_t port);
    event void closeTCP(socket_t fd);
    event void listenTCP(socket_t fd);
+   event void sendTCP(uint16_t addr, socket_port_t port, uint8_t* payload);
 }

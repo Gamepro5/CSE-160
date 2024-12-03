@@ -17,6 +17,7 @@
 #include "includes/Route.h"
 #include "includes/LinkState.h"
 #include "includes/socket.h"
+#include "includes/message_tcp_t.h"
 
 
 module Node
@@ -183,6 +184,17 @@ implementation
             dbg(TRANSPORT_CHANNEL, "Now listening on port %i\n", fd);
         }
         else dbg(TRANSPORT_CHANNEL, "Error: Port %i is already in use!\n", fd);
+    }
+
+    event void CommandHandler.sendTCP(uint16_t addr, socket_port_t port, uint8_t* payload)
+    {
+        uint8_t* payloadStr = "Our really long message indeed that can be sent now using TCP, which is hard coded because of the limitations of TestSim.py\0"; // not liking strings that are longer than a very short constraint.\0";
+        dbg(TRANSPORT_CHANNEL, "Payload: %s\n", payloadStr);
+        if(call Transport.send(addr, port, payloadStr) == SUCCESS)
+        {
+            dbg(TRANSPORT_CHANNEL, "Data sent to %i:%i\n", addr, port);
+        }
+        else dbg(TRANSPORT_CHANNEL, "Error: Something went wrong!\n");
     }
 
     event void Routing.updateRouteTable(void* data, uint8_t len) {}

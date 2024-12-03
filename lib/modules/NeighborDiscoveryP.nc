@@ -12,7 +12,7 @@ implementation
     uint8_t neighborCount = 0;
     uint8_t tablePointer = 0;
     uint16_t sequenceNum = 0;       // initial sequence number
-    int TIMER_INTERVAL = 1000;       // in milliseconds
+    int TIMER_INTERVAL = 3333;       // in milliseconds
     float alpha = 0.3;             // alpha for EWMA (between 0 and 1)
     float activeCutoff = 0.1;      // cutoff percentage for determining whether a node is really a neighbor
     uint8_t i;                      // global iterator
