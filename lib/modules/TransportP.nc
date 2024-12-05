@@ -8,9 +8,6 @@ module TransportP
     uses interface Timer<TMilli> as sendTimer;
     uses interface SimpleSend as Sender;
 
-    // uses interface Queue<message_tcp_t*>;
-    // uses interface Queue<message_tcp_t> as DataQueue;
-    // uses interface Pool<message_tcp_t>;
     uses interface Queue<socket_t> as SendQueue;
     uses interface Queue<socket_t> as TimerQueue;
     uses interface Queue<pack> as ReceiveQueue;
@@ -57,6 +54,7 @@ implementation
         if(++connectReadPointer >= MAX_NUM_OF_SOCKETS) connectReadPointer = 0;
     }
 
+    // I never use this xd probably should
     event void activeTimer.fired()
     {
 
@@ -72,11 +70,13 @@ implementation
         return INFINITY;
     }
 
+    // Eventually might implement this, esp if needed for project 4
     command error_t Transport.bind(socket_t fd, socket_addr_t *addr)
     {
         
     }
 
+    // Used for accepting connections to a socket that is LISTENING
     command socket_t Transport.accept(socket_t fd)
     {
         if(socket[fd].state != LISTEN) return NULL;
@@ -396,18 +396,24 @@ implementation
         return SUCCESS;
     }
 
-    // Command used to retrieve the correct socket based on the 
+    // Command used to retrieve the correct socket based on the address and port of the socket
     command socket_t Transport.retrieve(socket_addr_t *addr)
     {
         socket_t i;
+        
+        // Checks each socket for matching address and port
         for(i = 0; i < MAX_NUM_OF_SOCKETS; i++)
         {
+            // If it matches, return index of socket in store
             if(socket[i].dest.addr == addr->addr
             && socket[i].dest.port == addr->port) return i;
         }
+        // If nothing matches, return ROOT_SOCKET_ADDR, indicating nothing was found
+        // Or in other words unable to retrieve the socket (does not exist)
         return ROOT_SOCKET_ADDR;
     }
 
+    // Command used to send a socket buffer to the destination through TCP
     command error_t Transport.send(uint16_t addr, socket_port_t port, uint8_t* payload)
     {
         socket_addr_t dest;
@@ -415,8 +421,11 @@ implementation
         
         dest.addr = addr;
         dest.port = port;
+
+        // Retrieves the socket corresponding to the address and port
         fd = call Transport.retrieve(&dest);
 
+        // If the socket exists or isn't established, abort sending
         if(fd == ROOT_SOCKET_ADDR || socket[fd].state != ESTABLISHED)
         {
             dbg(TRANSPORT_CHANNEL, "ERROR: Not connected to %i:%i\n", addr, port);
@@ -424,20 +433,25 @@ implementation
         }
         dbg(TRANSPORT_CHANNEL, "Current payload to send: \"%s\"\n", payload);
         
+        // Update socket values
         socket[fd].lastWritten = call Transport.write(fd, payload, strlen(payload));
         socket[fd].lastAck = INFINITY;
         socket[fd].lastSent = 0;
 
+        // Enqueue socket in send queue and post send data task
         call SendQueue.enqueue(fd);
         post sendData();
+
         dbg(TRANSPORT_CHANNEL, "TASK POSTED: Send data to %i:%i\n", addr, port);
         return SUCCESS;
     }
 
+    // Timer fires after sending data in sendData task
     event void sendTimer.fired()
     {
         socket_t fd = call TimerQueue.dequeue();
         dbg(TRANSPORT_CHANNEL, "Send timer fired: ");
+        
         // Check if socket is still active
         if(socket[fd].state != ESTABLISHED) 
         {
@@ -446,16 +460,22 @@ implementation
         }
         dbg_clear(TRANSPORT_CHANNEL, "Connection still open! Last ack received is %i\n", socket[fd].lastAck);
 
+        // If there is no more data in the buffer to send, abort
         if(socket[fd].lastAck < 200
         && (socket[fd].lastAck+1)*TRANSPORT_MAX_PAYLOAD_SIZE >= SOCKET_BUFFER_SIZE-1) return;
+        
+        // Enqueue the socket in send queue in post send data task
         call SendQueue.enqueue(fd);
         post sendData();
     }
 
+    // Task is called when there is data to send
     task void sendData()
     {
+        // If there is a socket in the send queue
         if(! call SendQueue.empty())
         {
+            // Dequeue the socket
             socket_t fd = call SendQueue.dequeue();
             uint8_t flags = 0b00010000;
 
@@ -467,65 +487,85 @@ implementation
                 :
                 socket[fd].lastWritten/TRANSPORT_MAX_PAYLOAD_SIZE + 1;
             uint8_t* writePtr = &socket[fd].sendBuff;
+            
+            // If the windowStart is INFINITY (default initial value), set to 0
             if(windowStart == INFINITY) windowStart = 0;
+            // Otherwise increment by 1
             else windowStart++;
+
             dbg(TRANSPORT_CHANNEL, "Last written is %i from %i\n", lastWritten, socket[fd].lastWritten);
+            
             // Sends data fragments from buffer from the window
             for(i = windowStart; i < (windowStart + SLIDING_WINDOW_SIZE) && i < SOCKET_BUFFER_SIZE && i <= lastWritten; i++)
             {
+                // Payload to send in packet
                 uint8_t payload[TRANSPORT_MAX_PAYLOAD_SIZE];
                 uint8_t* nullterm = "\0";
+
                 // Extracts data from socket and puts in payload
                 memcpy(payload, writePtr + i*TRANSPORT_MAX_PAYLOAD_SIZE, TRANSPORT_MAX_PAYLOAD_SIZE);
                 memcpy(payload + TRANSPORT_MAX_PAYLOAD_SIZE, nullterm, 1);
 
+                // Creates and sends the packet off to destination
                 makeTransportPack(&sendPackage, TOS_NODE_ID, socket[fd].dest.addr, PROTOCOL_TCP, fd, socket[fd].dest.port, MAX_TTL, i, flags, SLIDING_WINDOW_SIZE, 0, payload);
                 call Sender.send(sendPackage, routeTable[sendPackage.dest-1].to);
+                
                 dbg(TRANSPORT_CHANNEL, "windowPos=%i, fd=%i, msg=\"%s\"\n", i, fd, payload);
 
+                // Updates the last sent
                 socket[fd].lastSent = i*TRANSPORT_MAX_PAYLOAD_SIZE;
             }
             
-            // Fires send timer
+            // Fires send timer and adds socket to timer queue
             call sendTimer.startOneShot(1667);
             call TimerQueue.enqueue(fd);
             
+            // Posts the send data task
             post sendData();
             return;
         }
     }
 
+    // Task is called when there is data being received
     task void receiveData()
     {
+        // If there is a packet in the receive queue
         if(! call ReceiveQueue.empty())
         {
+            // Dequeue the packet
             pack packdata = call ReceiveQueue.dequeue();
             pack* package = &packdata;
             transportheader* header = (transportheader*)&(package->payload);
             socket_t fd = header->destPort;
             uint8_t flags = 0b01010000;
             uint8_t* readPtr = &socket[fd].rcvdBuff;
-            
 
             dbg(TRANSPORT_CHANNEL, "I received a data packet from %i:%i, seq=%i, \"%s\"\n", package->src, header->srcPort, header->seq, header->payload);
 
+            // Copy the data segment to the buffer using the sequence number as the offset
             memcpy(readPtr + header->seq*TRANSPORT_MAX_PAYLOAD_SIZE, header->payload, TRANSPORT_MAX_PAYLOAD_SIZE);
             
             dbg(TRANSPORT_CHANNEL, "Current buffer: \"%s\"\n", readPtr);
 
+            // Increment the next expected segment value
             socket[fd].nextExpected++;
             dbg(TRANSPORT_CHANNEL, "Next Expected segment is now %i\n", socket[fd].nextExpected);
 
+            // Update the last read and last received accordingly
             if(socket[fd].lastRead < header->seq*TRANSPORT_MAX_PAYLOAD_SIZE) socket[fd].lastRead = header->seq*TRANSPORT_MAX_PAYLOAD_SIZE;
             if(socket[fd].lastRcvd < header->seq*TRANSPORT_MAX_PAYLOAD_SIZE) socket[fd].lastRcvd = header->seq*TRANSPORT_MAX_PAYLOAD_SIZE;
 
+            // Create and send an acknowledgement packet
             makeTransportPack(&sendPackage, TOS_NODE_ID, socket[fd].dest.addr, PROTOCOL_TCP, fd, socket[fd].dest.port, MAX_TTL, sequenceNum++, flags, SLIDING_WINDOW_SIZE, header->seq, "");
             call Sender.send(sendPackage, routeTable[sendPackage.dest-1].to);
 
+            // Repost task
             post receiveData();
+            return;
         }
     }
 
+    // Function is used to verify if a socket's destination address and port matches an input
     bool verify(socket_t fd, uint16_t addr, socket_port_t port)
     {
         if(socket[fd].dest.addr == addr && socket[fd].dest.port == port) return TRUE;
@@ -533,6 +573,18 @@ implementation
     }
 }
 
+// END OF PROGRAM
+
+    // BELOW THIS POINT IS OLD USELESS CODE (MAYBE USEFUL, BUT NOT USED)
+
+    // MODULE SEGMENT
+
+    // uses interface Queue<message_tcp_t*>;
+    // uses interface Queue<message_tcp_t> as DataQueue;
+    // uses interface Pool<message_tcp_t>;
+
+    // IMPLEMENTATION SEGMENT
+    
     // task void sendData()
     // {
     //     // If all data hasn't been sent yet
