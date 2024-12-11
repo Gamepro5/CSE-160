@@ -34,6 +34,7 @@ module Node
     uses interface Flooding;
     uses interface Routing;
     uses interface Transport;
+    uses interface Chat;
 }
 
 implementation
@@ -72,36 +73,36 @@ implementation
             // if(myMsg->TTL == 0) return msg; //packet is dropped
             switch (myMsg->protocol)
             {
-                case PROTOCOL_PING:
-                    memcpy(&message, &(myMsg->payload), myMsg->length);
-                    dbg(GENERAL_CHANNEL, "Package Payload: %s\n", message);
-                    break;
-                case PROTOCOL_PINGREPLY:
-                    break;
-                case PROTOCOL_NEIGHBOR_DISCOVERY:
-                    call NeighborDiscovery.received(myMsg);
-                    break;
-                case PROTOCOL_FLOODING:
-                    call Flooding.flood(myMsg);
-                    break;
-                case PROTOCOL_LINK_STATE:
-                    call Routing.receivedLinkStatePacket(myMsg);
-                    break;
-                case PROTOCOL_ROUTING:
-                    call Routing.forward(myMsg);
-                    break;
-                case PROTOCOL_ROUTING_REPLY:
-                    call Routing.forward(myMsg);
-                    break;
-                case PROTOCOL_TCP:
-                    call Transport.receive(myMsg);
-                    break;
+               case PROTOCOL_PING:
+                  memcpy(&message, &(myMsg->payload), myMsg->length);
+                  dbg(GENERAL_CHANNEL, "Package Payload: %s\n", message);
+                  break;
+               case PROTOCOL_PINGREPLY:
+                  break;
+               case PROTOCOL_NEIGHBOR_DISCOVERY:
+                  call NeighborDiscovery.received(myMsg);
+                  break;
+               case PROTOCOL_FLOODING:
+                  call Flooding.flood(myMsg);
+                  break;
+               case PROTOCOL_LINK_STATE:
+                  call Routing.receivedLinkStatePacket(myMsg);
+                  break;
+               case PROTOCOL_ROUTING:
+                  call Routing.forward(myMsg);
+                  break;
+               case PROTOCOL_ROUTING_REPLY:
+                  call Routing.forward(myMsg);
+                  break;
+               case PROTOCOL_TCP:
+                  call Transport.receive(myMsg);
+                  break;
             }
             return msg;
-        }
-        dbg(GENERAL_CHANNEL, "Unknown Packet Type %d\n", len);
-        return msg;
-    }
+         }
+         dbg(GENERAL_CHANNEL, "Unknown Packet Type %d\n", len);
+         return msg;
+      }
 
 
     event void CommandHandler.ping(uint16_t destination, uint8_t *payload)

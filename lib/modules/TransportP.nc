@@ -79,8 +79,11 @@ implementation
     // Used for accepting connections to a socket that is LISTENING
     command socket_t Transport.accept(socket_t fd)
     {
+        socket_t socket;
         if(socket[fd].state != LISTEN) return NULL;
-        else return fd;
+        socket = call Transport.socket();
+        if(socket != ROOT_SOCKET_ADDR) return socket;
+        else return NULL;
     }
     
     // *buff = starting point of buffer data (from full size payload)
@@ -501,13 +504,16 @@ implementation
                 // Payload to send in packet
                 uint8_t payload[TRANSPORT_MAX_PAYLOAD_SIZE];
                 uint8_t* nullterm = "\0";
+                uint8_t windowSizeOutput = SLIDING_WINDOW_SIZE;
 
                 // Extracts data from socket and puts in payload
                 memcpy(payload, writePtr + i*TRANSPORT_MAX_PAYLOAD_SIZE, TRANSPORT_MAX_PAYLOAD_SIZE);
                 memcpy(payload + TRANSPORT_MAX_PAYLOAD_SIZE, nullterm, 1);
 
+                if(i == lastWritten) windowSizeOutput = 0;
+
                 // Creates and sends the packet off to destination
-                makeTransportPack(&sendPackage, TOS_NODE_ID, socket[fd].dest.addr, PROTOCOL_TCP, fd, socket[fd].dest.port, MAX_TTL, i, flags, SLIDING_WINDOW_SIZE, 0, payload);
+                makeTransportPack(&sendPackage, TOS_NODE_ID, socket[fd].dest.addr, PROTOCOL_TCP, fd, socket[fd].dest.port, MAX_TTL, i, flags, windowSizeOutput, 0, payload);
                 call Sender.send(sendPackage, routeTable[sendPackage.dest-1].to);
                 
                 dbg(TRANSPORT_CHANNEL, "windowPos=%i, fd=%i, msg=\"%s\"\n", i, fd, payload);
@@ -559,10 +565,33 @@ implementation
             makeTransportPack(&sendPackage, TOS_NODE_ID, socket[fd].dest.addr, PROTOCOL_TCP, fd, socket[fd].dest.port, MAX_TTL, sequenceNum++, flags, SLIDING_WINDOW_SIZE, header->seq, "");
             call Sender.send(sendPackage, routeTable[sendPackage.dest-1].to);
 
+            if(header->windowSize == 0) signal Transport.dataReceived(fd);
+
             // Repost task
             post receiveData();
             return;
         }
+    }
+
+    command bool Transport.isEstablished(socket_t fd)
+    {
+        if(socket[fd].state == ESTABLISHED) return TRUE;
+        else return FALSE;
+    }
+
+    command uint8_t* Transport.getSendBuff(socket_t fd)
+    {
+        return &socket[fd].sendBuff;
+    }
+
+    command uint8_t* Transport.getRcvdBuff(socket_t fd)
+    {
+        return &socket[fd].rcvdBuff;
+    }
+
+    command socket_addr_t Transport.getDest(socket_t fd)
+    {
+        return socket[fd].addr;
     }
 
     // Function is used to verify if a socket's destination address and port matches an input

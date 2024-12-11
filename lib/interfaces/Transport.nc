@@ -145,4 +145,10 @@ interface Transport
 
    command socket_t retrieve(socket_addr_t *addr);
    command error_t send(uint16_t addr, socket_port_t port, uint8_t* payload);
+   command bool isEstablished(socket_t fd);
+   command bool Transport.isEstablished(socket_t fd)
+   command uint8_t* getSendBuff(socket_t fd);
+   command uint8_t* getRcvdBuff(socket_t fd);
+   command socket_addr_t getDest(socket_t fd);
+   event void dataReceived(socket_t fd);
 }
