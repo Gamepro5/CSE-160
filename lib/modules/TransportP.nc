@@ -79,10 +79,10 @@ implementation
     // Used for accepting connections to a socket that is LISTENING
     command socket_t Transport.accept(socket_t fd)
     {
-        socket_t socket;
+        socket_t newSocket;
         if(socket[fd].state != LISTEN) return NULL;
-        socket = call Transport.socket();
-        if(socket != ROOT_SOCKET_ADDR) return socket;
+        newSocket = call Transport.socket();
+        if(newSocket != ROOT_SOCKET_ADDR) return newSocket;
         else return NULL;
     }
     
@@ -591,7 +591,7 @@ implementation
 
     command socket_addr_t Transport.getDest(socket_t fd)
     {
-        return socket[fd].addr;
+        return socket[fd].dest;
     }
 
     // Function is used to verify if a socket's destination address and port matches an input

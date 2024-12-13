@@ -7,13 +7,6 @@ module ChatP
     uses interface Timer<TMilli> as connectTimer;
 }
 
-typedef struct username_store_t
-{
-    uint8_t username[11];
-    bool isServerHost;
-}
-username_store_t;
-
 implementation
 {
     socket_t connectedServer = ROOT_SOCKET_ADDR;
@@ -21,7 +14,7 @@ implementation
     bool activeClients[MAX_NUM_OF_SOCKETS];
     socket_t activeServer = ROOT_SOCKET_ADDR;
 
-    username_store_t username[MAX_NUM_OF_SOCKETS];
+    username_store_t users[MAX_NUM_OF_SOCKETS];
 
     event void connectTimer.fired()
     {
@@ -32,8 +25,17 @@ implementation
             if(call Transport.isEstablished(fd))
             {
                 socket_addr_t dest = call Transport.getDest(fd);
-                
-                uint8_t* message = "hello " + username + " " + fd + "\r\n";
+                uint8_t message[SOCKET_BUFFER_SIZE];
+                uint8_t* messageHeader = "hello \0";
+                uint8_t* messageEnd = "\r\n";
+                uint8_t* writePtr = &message;
+
+                memcpy(writePtr, messageHeader, strlen(messageHeader));
+                writePtr += strlen(messageHeader);
+                memcpy(writePtr, users[fd].username, strlen(users[fd].username));
+                writePtr += strlen(users[fd].username);
+                memcpy(writePtr, messageEnd, strlen(messageEnd));
+                writePtr += strlen(messageEnd);
                 
                 call Transport.send(dest.addr, dest.port, message);
             }
@@ -51,9 +53,9 @@ implementation
 
         if(call Transport.connect(fd, &dest) == FAIL) return FAIL;
         
-        memcpy(username[fd].username, username, 10);
-        memcpy(username[fd].username + 10, nullterm, 1);
-        username[fd].isServerHost = FALSE;
+        memcpy(users[fd].username, username, 10);
+        memcpy(users[fd].username + 10, nullterm, 1);
+        users[fd].isServerHost = FALSE;
 
         call ConnectQueue.enqueue(fd);
         call connectTimer.startOneShot(5000);
@@ -64,7 +66,7 @@ implementation
         if(call Transport.listen(port) == SUCCESS)
         {
             activeServer = (socket_t) port;
-            username[activeServer].isServerHost = TRUE;
+            users[activeServer].isServerHost = TRUE;
             return SUCCESS;
         }
         else return FAIL;
@@ -76,7 +78,7 @@ implementation
         uint8_t* messageHeader = "msg ";
         uint8_t* messageEnd = "\r\n\0";
         uint8_t* writePtr = &targetMessage + strlen(messageHeader);
-        socket_addr_t dest = call Transport.getDest(fd);
+        socket_addr_t dest = call Transport.getDest(connectedServer);
         
         memcpy(&targetMessage, messageHeader, strlen(messageHeader));
         memcpy(writePtr, message, strlen(message));
@@ -107,10 +109,11 @@ implementation
         uint8_t message[SOCKET_BUFFER_SIZE];
         uint8_t* buffptr = call Transport.getRcvdBuff(fd);
         uint8_t i;
-        uint8_t command[16];
+        uint8_t rcvdCommand[16];
+        uint8_t* readPtr = &message;
         memcpy(message, buffptr, strlen(buffptr));
         
-        if(username[fd].isServerHost == FALSE)
+        if(users[fd].isServerHost == FALSE)
         {
             dbg("chat", "Message received!\n");
             dbg("chat", "\"%s\"\n", message);
@@ -120,16 +123,16 @@ implementation
         for(i = 0; i < strlen(buffptr); i++)
         {
             if((message[i] == '\r' && message[i+1] == '\n') || message[i] == ' ') break;
-            memcpy(&command + i, &message + i, 1);
+            memcpy(&rcvdCommand + i, &message + i, 1);
         }
-        if(command == "hello")
+        if(rcvdCommand == "hello")
         {
             uint8_t clientport = 0;
             
             for(i = 6; i < strlen(buffptr); i++)
             {
                 if(message[i] == ' ') break;
-                memcpy(username[fd].username + i-6, &message + i, 1);
+                memcpy(users[fd].username + i-6, &message + i, 1);
             }
 
             i++;
@@ -140,9 +143,13 @@ implementation
                 clientport = clientport*10 + message[i] - 48;
             }
         }
-        else if(command == "msg")
+        else if(rcvdCommand == "msg")
         {
-            uint8_t targetMessage[111];
+            uint8_t targetMessage[111];\
+            uint8_t beginMessage;
+            
+            // i++;
+            beginMessage = i;
 
             for(i = 4; i < strlen(buffptr); i++)
             {
@@ -153,12 +160,13 @@ implementation
             {
                 if(activeClients[i] == TRUE)
                 {
+                    socket_addr_t dest = call Transport.getDest(i);
                     call Transport.send(dest.addr, dest.port, &targetMessage);
                 }
                 dbg("chat", "MESSAGES SENT FROM SERVER!\n");
             }
         }
-        else if(command == "whisper")
+        else if(rcvdCommand == "whisper")
         {
             uint8_t targetUsername[11];
             uint8_t targetMessage[111];
@@ -181,7 +189,7 @@ implementation
             
             for(i = 0; i < MAX_NUM_OF_SOCKETS; i++)
             {
-                if(strcmp(username[fd].username, targetUsername) == 0) break;
+                if(strcmp(users[fd].username, targetUsername) == 0) break;
             }
             
             if(i == MAX_NUM_OF_SOCKETS)
@@ -190,12 +198,12 @@ implementation
             }
             else
             {
-                socket_addr_t dest = call Transport.getDest(fd);
+                socket_addr_t dest = call Transport.getDest(i);
                 dbg("chat", "USERNAME FOUND, MESSAGE SENT!\n");
                 call Transport.send(dest.addr, dest.port, &targetMessage);
             }
         }
-        else if(command == "listusr")
+        else if(rcvdCommand == "listusr")
         {
             uint8_t targetMessage[SOCKET_BUFFER_SIZE];
             uint8_t* messageHeader = "listUsrRply ";
@@ -216,8 +224,8 @@ implementation
                         writePtr += strlen(messageGap);
                     }
                     
-                    memcpy(writePtr, username[i].username, strlen(username[i].username));
-                    writePtr += strlen(username[i].username);
+                    memcpy(writePtr, users[i].username, strlen(users[i].username));
+                    writePtr += strlen(users[i].username);
 
                     firstUserAccounted = TRUE;
                 }

@@ -1,4 +1,4 @@
-configuration
+configuration ChatC
 {
     provides interface Chat;
 }
@@ -8,8 +8,8 @@ implementation
     components ChatP;
     Chat = ChatP.Chat;
 
-    components new SimpleSendC(AM_PACK);
-    ChatP.Sender -> SimpleSendC;
+    components TransportP;
+    ChatP.Transport -> TransportP;
 
     components new QueueC(socket_t, 10) as ConnectQueueC;
     ChatP.ConnectQueue -> ConnectQueueC;

@@ -18,6 +18,7 @@
 #include "includes/LinkState.h"
 #include "includes/socket.h"
 #include "includes/message_tcp_t.h"
+#include "includes/chat.h"
 
 
 module Node
@@ -207,7 +208,7 @@ implementation
         else dbg(CHAT_CHANNEL, "Error: Port %i is already in use!\n", fd);
     }
 
-    event void CommandHandler.helloChat(uint8_t* username, uint16_t address, uint8_t port)
+    event void CommandHandler.helloChat(uint16_t address, uint8_t port, uint8_t* username)
     {
         if(call Chat.connectToServer(username, address, port) == SUCCESS)
         {

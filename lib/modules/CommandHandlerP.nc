@@ -126,7 +126,7 @@ implementation
 
             case CMD_CHAT_HELLO:
                 dbg(COMMAND_CHANNEL, "Command Type: CHAT Hello\n");
-                signal CommandHandler.helloChat(buff[0], buff[1], buff[2]);
+                signal CommandHandler.helloChat(buff[0], buff[1], &buff[2]);
                 break;
 
             case CMD_CHAT_MSG:
@@ -135,8 +135,8 @@ implementation
                 break;
 
             case CMD_CHAT_WHISPER:
-                dbg(COMMAND_CHANNEL, "Command Type: CHAT Msg\n");
-                signal CommandHandler.whisperChat(buff[0], buff[1]);
+                dbg(COMMAND_CHANNEL, "Command Type: CHAT Whisper\n");
+                signal CommandHandler.whisperChat(&buff[0], &buff[1]);
                 break;
 
             case CMD_CHAT_LISTUSR:
