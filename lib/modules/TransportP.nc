@@ -80,10 +80,11 @@ implementation
     command socket_t Transport.accept(socket_t fd)
     {
         socket_t newSocket;
-        if(socket[fd].state != LISTEN) return NULL;
+        dbg(TRANSPORT_CHANNEL, "Connection requested for port %i\n", fd);
+        if(socket[fd].state != LISTEN) return ROOT_SOCKET_ADDR;
         newSocket = call Transport.socket();
-        if(newSocket != ROOT_SOCKET_ADDR) return newSocket;
-        else return NULL;
+        dbg(TRANSPORT_CHANNEL, "Redirecting to socket %i\n", newSocket);
+        return newSocket;
     }
     
     // *buff = starting point of buffer data (from full size payload)
@@ -126,7 +127,7 @@ implementation
                 dbg(TRANSPORT_CHANNEL, "Received SYN from %i:%i\n", package->src, header->srcPort);
 
                 // If the socket is NULL (not listening), abort
-                if(fd == NULL) return FAIL;
+                if(fd == ROOT_SOCKET_ADDR) return FAIL;
 
                 // Assign address properties for socket destination
                 addr.addr = package->src;
@@ -466,6 +467,7 @@ implementation
         // If there is no more data in the buffer to send, abort
         if(socket[fd].lastAck < 200
         && (socket[fd].lastAck+1)*TRANSPORT_MAX_PAYLOAD_SIZE >= SOCKET_BUFFER_SIZE-1) return;
+        if((socket[fd].lastAck+1)*TRANSPORT_MAX_PAYLOAD_SIZE > socket[fd].lastWritten) return;
         
         // Enqueue the socket in send queue in post send data task
         call SendQueue.enqueue(fd);
@@ -523,7 +525,7 @@ implementation
             }
             
             // Fires send timer and adds socket to timer queue
-            call sendTimer.startOneShot(1667);
+            call sendTimer.startOneShot(2500);
             call TimerQueue.enqueue(fd);
             
             // Posts the send data task

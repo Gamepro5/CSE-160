@@ -26,8 +26,8 @@ implementation
             {
                 socket_addr_t dest = call Transport.getDest(fd);
                 uint8_t message[SOCKET_BUFFER_SIZE];
-                uint8_t* messageHeader = "hello \0";
-                uint8_t* messageEnd = "\r\n";
+                uint8_t* messageHeader = "hello ";
+                uint8_t* messageEnd = "\r\n\0";
                 uint8_t* writePtr = &message;
 
                 memcpy(writePtr, messageHeader, strlen(messageHeader));
@@ -50,15 +50,17 @@ implementation
         
         dest.addr = address;
         dest.port = port;
-
+        
         if(call Transport.connect(fd, &dest) == FAIL) return FAIL;
         
         memcpy(users[fd].username, username, 10);
         memcpy(users[fd].username + 10, nullterm, 1);
-        users[fd].isServerHost = FALSE;
+        users[fd].isClientSide = TRUE;
+        dbg(CHAT_CHANNEL, "username %s saved for socket %i on client side\n", users[fd].username, fd);
 
         call ConnectQueue.enqueue(fd);
         call connectTimer.startOneShot(5000);
+        return SUCCESS;
     }
 
     command error_t Chat.startServer(uint8_t port)
@@ -66,7 +68,7 @@ implementation
         if(call Transport.listen(port) == SUCCESS)
         {
             activeServer = (socket_t) port;
-            users[activeServer].isServerHost = TRUE;
+            users[activeServer].isClientSide = FALSE;
             return SUCCESS;
         }
         else return FAIL;
@@ -86,6 +88,7 @@ implementation
         memcpy(writePtr, messageEnd, strlen(messageEnd));
 
         call Transport.send(dest.addr, dest.port, &targetMessage);
+        return SUCCESS;
     }
 
     command error_t Chat.whisperUser(uint8_t* username, uint8_t* message)
@@ -113,7 +116,7 @@ implementation
         uint8_t* readPtr = &message;
         memcpy(message, buffptr, strlen(buffptr));
         
-        if(users[fd].isServerHost == FALSE)
+        if(users[fd].isClientSide == TRUE)
         {
             dbg("chat", "Message received!\n");
             dbg("chat", "\"%s\"\n", message);
@@ -145,7 +148,7 @@ implementation
         }
         else if(rcvdCommand == "msg")
         {
-            uint8_t targetMessage[111];\
+            uint8_t targetMessage[111];
             uint8_t beginMessage;
             
             // i++;

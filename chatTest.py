@@ -40,14 +40,16 @@ def main():
         s.linkStateDMP(i)
         s.runTime(1)
     
-    s.listenTCP(8, 3)
+    s.listenChat(7, 3)
     s.runTime(5)
-    s.connectTCP(1, 8, 3)
+    s.helloChat(1, 7, 3, "big money")
     s.runTime(500)
-    s.sendTCP(1, 8, 3, "Yeah no")
-    s.runTime(400)
-    s.closeTCP(1, 0)
-    s.runTime(200)
+    s.helloChat(2, 7, 3, "smallballs")
+    s.runTime(500)
+    s.msgChat(1, "Hello?")
+    s.runTime(50)
+    s.msgChat(2, "Boy?")
+    s.runTime(50)
     
 
 if __name__ == '__main__':

@@ -173,6 +173,22 @@ class TestSim:
     def sendTCP(self, source, dest, port, msg):
         self.sendCMD(self.CMD_TCP_SEND, source, "{0}{1}{2}".format(chr(dest),chr(port),msg));
 
+    def listenChat(self, source, port):
+        self.sendCMD(self.CMD_CHAT_SERVER, source, "{0}".format(chr(port)));
+    
+    def helloChat(self, source, dest, port, username):
+        self.sendCMD(self.CMD_CHAT_HELLO, source, "{0}{1}{2}".format(chr(dest), chr(port), username));
+    
+    def msgChat(self, source, msg):
+        self.sendCMD(self.CMD_CHAT_MSG, source, "{0}".format(msg));
+    
+    def whisperChat(self, source, dest_username, msg):
+        self.sendCMD(self.CMD_CHAT_WHISPER, source, "{0}{1}".format(msg,username));
+
+    def listChat(self, source):
+        self.sendCMD(self.CMD_CHAT_LISTUSR, source);
+    
+
 def main():
     s = TestSim();
     s.runTime(10);

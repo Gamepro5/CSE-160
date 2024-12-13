@@ -226,7 +226,7 @@ implementation
         else dbg(CHAT_CHANNEL, "Failed to begin sending message \"%s\"\n", message);
     }
 
-    event void CommandHandler.whisperChat(uint8_t* username, uint8_t* message)
+    event void CommandHandler.whisperChat(uint8_t message, uint8_t* username)
     {
         if(call Chat.whisperUser(username, message) == SUCCESS)
         {

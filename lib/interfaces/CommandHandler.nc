@@ -21,6 +21,6 @@ interface CommandHandler
    event void listenChat(socket_t fd);
    event void helloChat(uint16_t address, uint8_t port, uint8_t* username);
    event void msgChat(uint8_t* message);
-   event void whisperChat(uint8_t* username, uint8_t* message);
+   event void whisperChat(uint8_t message, uint8_t* username);
    event void listChat();
 }
