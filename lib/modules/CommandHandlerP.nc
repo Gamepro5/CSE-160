@@ -119,6 +119,31 @@ implementation
                 signal CommandHandler.sendTCP(buff[0], buff[1], &buff[2]);
                 break;
 
+            case CMD_CHAT_SERVER:
+                dbg(COMMAND_CHANNEL, "Command Type: CHAT Server\n");
+                signal CommandHandler.listenChat(buff[0]);
+                break;
+
+            case CMD_CHAT_HELLO:
+                dbg(COMMAND_CHANNEL, "Command Type: CHAT Hello\n");
+                signal CommandHandler.helloChat(buff[0], buff[1], buff[2]);
+                break;
+
+            case CMD_CHAT_MSG:
+                dbg(COMMAND_CHANNEL, "Command Type: CHAT Msg\n");
+                signal CommandHandler.msgChat(buff[0]);
+                break;
+
+            case CMD_CHAT_WHISPER:
+                dbg(COMMAND_CHANNEL, "Command Type: CHAT Msg\n");
+                signal CommandHandler.whisperChat(buff[0], buff[1]);
+                break;
+
+            case CMD_CHAT_LISTUSR:
+                dbg(COMMAND_CHANNEL, "Command Type: CHAT List Users\n");
+                signal CommandHandler.listChat();
+                break;
+
             default:
                 dbg(COMMAND_CHANNEL, "CMD_ERROR: \"%d\" does not match any known commands.\n", msg->id);
                 break;

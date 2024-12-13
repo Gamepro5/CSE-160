@@ -1,29 +1,27 @@
 module ChatP
 {
     provides interface Chat;
-    uses interface SimpleSend as Sender;
     uses interface Transport;
     
     uses interface Queue<socket_t> as ConnectQueue;
     uses interface Timer<TMilli> as connectTimer;
 }
 
-typedef nx_struct username_store_t
+typedef struct username_store_t
 {
     uint8_t username[11];
+    bool isServerHost;
 }
 username_store_t;
 
 implementation
 {
-    socket_t connectedServer;
-    
+    socket_t connectedServer = ROOT_SOCKET_ADDR;
+
     bool activeClients[MAX_NUM_OF_SOCKETS];
-    socket_t activeServer;
+    socket_t activeServer = ROOT_SOCKET_ADDR;
 
     username_store_t username[MAX_NUM_OF_SOCKETS];
-
-    pack sendPackage;
 
     event void connectTimer.fired()
     {
@@ -55,6 +53,7 @@ implementation
         
         memcpy(username[fd].username, username, 10);
         memcpy(username[fd].username + 10, nullterm, 1);
+        username[fd].isServerHost = FALSE;
 
         call ConnectQueue.enqueue(fd);
         call connectTimer.startOneShot(5000);
@@ -65,9 +64,42 @@ implementation
         if(call Transport.listen(port) == SUCCESS)
         {
             activeServer = (socket_t) port;
+            username[activeServer].isServerHost = TRUE;
             return SUCCESS;
         }
         else return FAIL;
+    }
+
+    command error_t Chat.messageServer(uint8_t* message)
+    {
+        uint8_t targetMessage[SOCKET_BUFFER_SIZE];
+        uint8_t* messageHeader = "msg ";
+        uint8_t* messageEnd = "\r\n\0";
+        uint8_t* writePtr = &targetMessage + strlen(messageHeader);
+        socket_addr_t dest = call Transport.getDest(fd);
+        
+        memcpy(&targetMessage, messageHeader, strlen(messageHeader));
+        memcpy(writePtr, message, strlen(message));
+        writePtr += strlen(message);
+        memcpy(writePtr, messageEnd, strlen(messageEnd));
+
+        call Transport.send(dest.addr, dest.port, &targetMessage);
+    }
+
+    command error_t Chat.whisperUser(uint8_t* username, uint8_t* message)
+    {
+
+    }
+
+    command error_t Chat.listUser()
+    {
+        uint8_t* message = "listusr\r\n\0";
+        socket_addr_t dest;
+        if(connectedServer == ROOT_SOCKET_ADDR) return FAIL;
+
+        dest = call Transport.getDest(connectedServer);
+        call Transport.send(dest.addr, dest.port, message);
+        return SUCCESS;
     }
 
     event void Transport.dataReceived(socket_t fd)
@@ -77,8 +109,15 @@ implementation
         uint8_t i;
         uint8_t command[16];
         memcpy(message, buffptr, strlen(buffptr));
+        
+        if(username[fd].isServerHost == FALSE)
+        {
+            dbg("chat", "Message received!\n");
+            dbg("chat", "\"%s\"\n", message);
+            return;
+        }
 
-        for(i = 0; i < strlen(buffptr) && i < ; i++)
+        for(i = 0; i < strlen(buffptr); i++)
         {
             if((message[i] == '\r' && message[i+1] == '\n') || message[i] == ' ') break;
             memcpy(&command + i, &message + i, 1);
@@ -112,10 +151,9 @@ implementation
             }
             for(i = 0; i < MAX_NUM_OF_SOCKETS; i++)
             {
-                if(activeClients[i] == TRUE 
-                && strcmp(username[fd].username, targetUsername) != 0)
+                if(activeClients[i] == TRUE)
                 {
-                    call Transport.send(dest.addr, dest.port, targetMessage);
+                    call Transport.send(dest.addr, dest.port, &targetMessage);
                 }
                 dbg("chat", "MESSAGES SENT FROM SERVER!\n");
             }
@@ -148,13 +186,13 @@ implementation
             
             if(i == MAX_NUM_OF_SOCKETS)
             {
-                dbg("chat", "USERNAME NOT FOUND!\n");
+                dbg("chat", "USERNAME NOT FOUND, FAILED TO PASS WHISPER!\n");
             }
             else
             {
                 socket_addr_t dest = call Transport.getDest(fd);
                 dbg("chat", "USERNAME FOUND, MESSAGE SENT!\n");
-                call Transport.send(dest.addr, dest.port, targetMessage);
+                call Transport.send(dest.addr, dest.port, &targetMessage);
             }
         }
         else if(command == "listusr")
@@ -185,7 +223,7 @@ implementation
                 }
             }
             dbg("chat", "Sending user list to %i:%i\n", dest.addr, dest.port);
-            call Transport.send(dest.addr, dest.port, targetMessage);
+            call Transport.send(dest.addr, dest.port, &targetMessage);
         }
     }
 }

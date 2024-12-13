@@ -22,6 +22,11 @@ class TestSim:
     CMD_TCP_LISTEN=15
     CMD_TCP_CLOSE=16
     CMD_TCP_SEND=17
+    CMD_CHAT_SERVER=30
+    CMD_CHAT_HELLO=31
+    CMD_CHAT_MSG=32
+    CMD_CHAT_WHISPER=33
+    CMD_CHAT_LISTUSR=34
 
     # CHANNELS - see includes/channels.h
     COMMAND_CHANNEL="command"
@@ -36,6 +41,9 @@ class TestSim:
 
     # Project 3
     TRANSPORT_CHANNEL="transport"
+
+    # Project 4
+    CHAT_CHANNEL="chat"
 
     # Personal Debuggin Channels for some of the additional models implemented.
     HASHMAP_CHANNEL="hashmap"

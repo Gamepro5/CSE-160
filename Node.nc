@@ -198,5 +198,52 @@ implementation
         else dbg(TRANSPORT_CHANNEL, "Error: Something went wrong!\n");
     }
 
+    event void CommandHandler.listenChat(socket_t fd)
+    {
+        if(call Chat.startServer(fd) == SUCCESS)
+        {
+            dbg(CHAT_CHANNEL, "Server started on port %i\n", fd);
+        }
+        else dbg(CHAT_CHANNEL, "Error: Port %i is already in use!\n", fd);
+    }
+
+    event void CommandHandler.helloChat(uint8_t* username, uint16_t address, uint8_t port)
+    {
+        if(call Chat.connectToServer(username, address, port) == SUCCESS)
+        {
+            dbg(CHAT_CHANNEL, "Attempting to connect to %i:%i as \"%s\"\n", address, port, username);
+        }
+        else dbg(CHAT_CHANNEL, "Error: Something went wrong when attempting to connect!\n");
+    }
+
+    event void CommandHandler.msgChat(uint8_t* message)
+    {
+        if(call Chat.messageServer(message) == SUCCESS)
+        {
+            dbg(CHAT_CHANNEL, "Sending message \"%s\"\n", message);
+        }
+        else dbg(CHAT_CHANNEL, "Failed to begin sending message \"%s\"\n", message);
+    }
+
+    event void CommandHandler.whisperChat(uint8_t* username, uint8_t* message)
+    {
+        if(call Chat.whisperUser(username, message) == SUCCESS)
+        {
+            dbg(CHAT_CHANNEL, "Whispering to %s: \"%s\"\n", username, message);
+        }
+        else dbg(CHAT_CHANNEL, "Failed to whisper to %s: \"%s\"\n", username, message);
+    }
+
+    event void CommandHandler.listChat()
+    {
+        if(call Chat.listUser() == SUCCESS)
+        {
+            dbg(CHAT_CHANNEL, "Sending list user request!\n");
+        }
+        else dbg(CHAT_CHANNEL, "Failed to send list user request!\n");
+    }
+
     event void Routing.updateRouteTable(void* data, uint8_t len) {}
+
+    event void Transport.dataReceived(socket_t fd){}
 }

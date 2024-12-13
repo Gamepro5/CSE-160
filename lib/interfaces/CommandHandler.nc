@@ -18,4 +18,9 @@ interface CommandHandler
    event void closeTCP(socket_t fd);
    event void listenTCP(socket_t fd);
    event void sendTCP(uint16_t addr, socket_port_t port, uint8_t* payload);
+   event void listenChat(socket_t fd);
+   event void helloChat(uint8_t* username, uint16_t address, uint8_t port);
+   event void msgChat(uint8_t* message);
+   event void whisperChat(uint8_t* username, uint8_t* message);
+   event void listChat();
 }
