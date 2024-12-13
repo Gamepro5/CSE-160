@@ -180,10 +180,10 @@ class TestSim:
         self.sendCMD(self.CMD_CHAT_HELLO, source, "{0}{1}{2}".format(chr(dest), chr(port), username));
     
     def msgChat(self, source, msg):
-        self.sendCMD(self.CMD_CHAT_MSG, source, "{0}".format(msg));
+        self.sendCMD(self.CMD_CHAT_MSG, source, "{0}".format(chr(msg)));
     
     def whisperChat(self, source, dest_username, msg):
-        self.sendCMD(self.CMD_CHAT_WHISPER, source, "{0}{1}".format(msg,username));
+        self.sendCMD(self.CMD_CHAT_WHISPER, source, "{0}{1}".format(chr(msg),dest_username));
 
     def listChat(self, source):
         self.sendCMD(self.CMD_CHAT_LISTUSR, source);

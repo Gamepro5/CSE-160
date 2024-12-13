@@ -30,6 +30,8 @@ implementation
                 uint8_t* messageEnd = "\r\n\0";
                 uint8_t* writePtr = &message;
 
+                connectedServer = fd;
+
                 memcpy(writePtr, messageHeader, strlen(messageHeader));
                 writePtr += strlen(messageHeader);
                 memcpy(writePtr, users[fd].username, strlen(users[fd].username));
@@ -79,10 +81,11 @@ implementation
         uint8_t targetMessage[SOCKET_BUFFER_SIZE];
         uint8_t* messageHeader = "msg ";
         uint8_t* messageEnd = "\r\n\0";
-        uint8_t* writePtr = &targetMessage + strlen(messageHeader);
+        uint8_t* writePtr = &targetMessage;
         socket_addr_t dest = call Transport.getDest(connectedServer);
         
-        memcpy(&targetMessage, messageHeader, strlen(messageHeader));
+        memcpy(writePtr, messageHeader, strlen(messageHeader));
+        writePtr += strlen(messageHeader);
         memcpy(writePtr, message, strlen(message));
         writePtr += strlen(message);
         memcpy(writePtr, messageEnd, strlen(messageEnd));
@@ -113,6 +116,11 @@ implementation
         uint8_t* buffptr = call Transport.getRcvdBuff(fd);
         uint8_t i;
         uint8_t rcvdCommand[16];
+        uint8_t* helloCommand = "hello\0";
+        uint8_t* msgCommand = "msg\0";
+        uint8_t* whisperCommand = "whisper\0";
+        uint8_t* listusrCommand = "listusr\0";
+        uint8_t* nullterm = "\0";
         uint8_t* readPtr = &message;
         memcpy(message, buffptr, strlen(buffptr));
         
@@ -123,33 +131,43 @@ implementation
             return;
         }
 
+        dbg(CHAT_CHANNEL, "Message received: %s\n", message);
+
         for(i = 0; i < strlen(buffptr); i++)
         {
             if((message[i] == '\r' && message[i+1] == '\n') || message[i] == ' ') break;
-            memcpy(&rcvdCommand + i, &message + i, 1);
+            memcpy(rcvdCommand + i, message + i, 1);
         }
-        if(rcvdCommand == "hello")
+        memcpy(rcvdCommand + i, nullterm, 1);
+
+        dbg(CHAT_CHANNEL, "Command received: \"%s\"\n", rcvdCommand);
+
+        if(strcmp(rcvdCommand, helloCommand) == 0)
         {
             uint8_t clientport = 0;
+            socket_addr_t dest = call Transport.getDest(fd);
             
             for(i = 6; i < strlen(buffptr); i++)
             {
-                if(message[i] == ' ') break;
-                memcpy(users[fd].username + i-6, &message + i, 1);
+                if((message[i] == '\r' && message[i+1] == '\n') || message[i] == ' ') break;
+                memcpy(users[fd].username + i-6, message + i, 1);
             }
 
             i++;
             
-            for(i = i; i < strlen(buffptr); i++)
-            {
-                if((message[i] == '\r' && message[i+1] == '\n')) break;
-                clientport = clientport*10 + message[i] - 48;
-            }
+            // for(i = i; i < strlen(buffptr); i++)
+            // {
+            //     if((message[i] == '\r' && message[i+1] == '\n')) break;
+            //     clientport = clientport*10 + message[i] - 48;
+            // }
+            activeClients[fd] = TRUE;
+            dbg(CHAT_CHANNEL, "%s (%i:%i) has joined the chatroom.\n", users[fd].username, dest.addr, dest.port);
         }
-        else if(rcvdCommand == "msg")
+        else if(strcmp(rcvdCommand, msgCommand) == 0)
         {
             uint8_t targetMessage[111];
             uint8_t beginMessage;
+            uint8_t sendCount = 0;
             
             // i++;
             beginMessage = i;
@@ -165,11 +183,12 @@ implementation
                 {
                     socket_addr_t dest = call Transport.getDest(i);
                     call Transport.send(dest.addr, dest.port, &targetMessage);
+                    sendCount++;
                 }
-                dbg("chat", "MESSAGES SENT FROM SERVER!\n");
             }
+            dbg("chat", "Message broadcasted to %i connected clients!\n", sendCount);
         }
-        else if(rcvdCommand == "whisper")
+        else if(strcmp(rcvdCommand, whisperCommand) == 0)
         {
             uint8_t targetUsername[11];
             uint8_t targetMessage[111];
@@ -206,7 +225,7 @@ implementation
                 call Transport.send(dest.addr, dest.port, &targetMessage);
             }
         }
-        else if(rcvdCommand == "listusr")
+        else if(strcmp(rcvdCommand, listusrCommand) == 0)
         {
             uint8_t targetMessage[SOCKET_BUFFER_SIZE];
             uint8_t* messageHeader = "listUsrRply ";

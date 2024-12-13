@@ -567,7 +567,18 @@ implementation
             makeTransportPack(&sendPackage, TOS_NODE_ID, socket[fd].dest.addr, PROTOCOL_TCP, fd, socket[fd].dest.port, MAX_TTL, sequenceNum++, flags, SLIDING_WINDOW_SIZE, header->seq, "");
             call Sender.send(sendPackage, routeTable[sendPackage.dest-1].to);
 
-            if(header->windowSize == 0) signal Transport.dataReceived(fd);
+            if(header->windowSize == 0) 
+            {
+                signal Transport.dataReceived(fd);
+                socket[fd].state = ESTABLISHED;
+                socket[fd].lastWritten = 0;
+                socket[fd].lastAck = INFINITY;
+                socket[fd].lastSent = 0;
+                socket[fd].lastRead = INFINITY;
+                socket[fd].lastRcvd = INFINITY;
+                socket[fd].nextExpected = 0;
+                // socket[fd].rcvdBuff = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+            }
 
             // Repost task
             post receiveData();

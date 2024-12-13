@@ -217,18 +217,28 @@ implementation
         else dbg(CHAT_CHANNEL, "Error: Something went wrong when attempting to connect!\n");
     }
 
-    event void CommandHandler.msgChat(uint8_t* message)
+    event void CommandHandler.msgChat(uint8_t message)
     {
-        if(call Chat.messageServer(message) == SUCCESS)
+        uint8_t* output;
+        if(message == 1) output = "Hello chat!\0";
+        else if(message == 2) output = "Where is the beef?\0";
+        else if(message == 3) output = "There is no way you did that.\0";
+
+        if(call Chat.messageServer(output) == SUCCESS)
         {
-            dbg(CHAT_CHANNEL, "Sending message \"%s\"\n", message);
+            dbg(CHAT_CHANNEL, "Sending message \"%s\"\n", output);
         }
         else dbg(CHAT_CHANNEL, "Failed to begin sending message \"%s\"\n", message);
     }
 
     event void CommandHandler.whisperChat(uint8_t message, uint8_t* username)
     {
-        if(call Chat.whisperUser(username, message) == SUCCESS)
+        uint8_t* output;
+        if(message == 1) output = "Hello chat!\0";
+        else if(message == 2) output = "Where is the beef?\0";
+        else if(message == 3) output = "There is no way you did that.\0";
+        
+        if(call Chat.whisperUser(username, output) == SUCCESS)
         {
             dbg(CHAT_CHANNEL, "Whispering to %s: \"%s\"\n", username, message);
         }

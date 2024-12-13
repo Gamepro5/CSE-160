@@ -42,14 +42,16 @@ def main():
     
     s.listenChat(7, 3)
     s.runTime(5)
-    s.helloChat(1, 7, 3, "big money")
+    s.helloChat(1, 7, 3, "bigmoney")
     s.runTime(500)
     s.helloChat(2, 7, 3, "smallballs")
     s.runTime(500)
-    s.msgChat(1, "Hello?")
-    s.runTime(50)
-    s.msgChat(2, "Boy?")
-    s.runTime(50)
+    s.msgChat(1, 1)
+    s.runTime(500)
+    s.msgChat(2, 2)
+    s.runTime(500)
+    s.listChat(2)
+    s.runTime(500)
     
 
 if __name__ == '__main__':
